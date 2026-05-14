@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פיצריית שף יוסף</title>
+    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Varela Round', Arial, sans-serif;
+            background: #0d0500;
+        }
+
+        #start-screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 48px;
+            background:
+                radial-gradient(ellipse at 50% 0%,   rgba(180,80,0,0.35) 0%, transparent 65%),
+                radial-gradient(ellipse at 50% 100%, rgba(100,30,0,0.4)  0%, transparent 60%),
+                linear-gradient(180deg, #0d0500 0%, #1e0b00 50%, #0d0500 100%);
+        }
+
+        /* ── Sliding image ── */
+        #slide-img {
+            position: absolute;
+            width: 400px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 22px;
+            object-fit: cover;
+            box-shadow:
+                0 0 0 3px rgba(200,132,58,0.6),
+                0 0 40px rgba(200,80,0,0.55),
+                0 16px 50px rgba(0,0,0,0.75);
+            opacity: 0;
+            pointer-events: none;
+            transition: left 0.9s cubic-bezier(0.34,1.2,0.64,1), opacity 0.7s ease, transform 0.9s cubic-bezier(0.34,1.2,0.64,1);
+        }
+
+        /* ── Title ── */
+        .title-wrap {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title-sub {
+            font-size: 18px;
+            color: #c8843a;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .title-main {
+            font-size: 62px;
+            color: #fff;
+            text-shadow:
+                0 0 40px rgba(255,160,40,0.7),
+                0 0 80px rgba(255,100,0,0.35),
+                2px 3px 8px rgba(0,0,0,0.9);
+            line-height: 1.1;
+            text-align: center;
+        }
+
+        .title-main span { color: #ffc850; }
+
+        .title-divider {
+            width: 180px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #c8843a, transparent);
+            margin-top: 6px;
+        }
+
+        /* ── Button ── */
+        #start-btn {
+            position: relative;
+            z-index: 2;
+            font-family: 'Varela Round', Arial, sans-serif;
+            font-size: 28px;
+            color: #fff;
+            background: linear-gradient(135deg, #b84000 0%, #e06010 40%, #b84000 100%);
+            border: none;
+            border-radius: 60px;
+            padding: 22px 90px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            overflow: hidden;
+            animation: btnGlow 2.4s ease-in-out infinite;
+            transition: transform 0.15s;
+        }
+
+        #start-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -75%;
+            width: 50%; height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.25), transparent);
+            animation: shine 3s ease-in-out infinite;
+        }
+
+        @keyframes shine {
+            0%   { left: -75%; }
+            50%  { left: 125%; }
+            100% { left: 125%; }
+        }
+
+        @keyframes btnGlow {
+            0%, 100% { box-shadow: 0 0 0 3px rgba(255,140,40,0.5), 0 0 0 6px rgba(255,100,0,0.18), 0 8px 32px rgba(180,60,0,0.7); }
+            50%       { box-shadow: 0 0 0 4px rgba(255,180,60,0.8), 0 0 0 9px rgba(255,120,0,0.28), 0 12px 50px rgba(200,80,0,0.9); }
+        }
+
+        #start-btn:hover  { transform: scale(1.07); }
+        #start-btn:active { transform: scale(0.96); }
+
+        /* ── Video ── */
+        #video-wrap {
+            display: none;
+            position: absolute;
+            inset: 0;
+        }
+        #video-wrap video { width: 100%; height: 100%; object-fit: cover; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+
+        <img id="slide-img" src="" alt="">
+
+        <div class="title-wrap">
+            <p class="title-sub">ברוכים הבאים אל</p>
+            <h1 class="title-main">פיצריית<br><span>שף יוסף</span></h1>
+            <div class="title-divider"></div>
+        </div>
+
+        <button id="start-btn">לחצו להתחלה</button>
+    </div>
+
+    <div id="video-wrap">
+        <video id="pre-video" src="video/pre.mp4" playsinline></video>
+    </div>
+
+    <script>
+        // ── Slideshow ──
+        const IMAGES   = ['images/pre1.png','images/pre2.png','images/pre3.png','images/pre4.png'];
+        const IMG_W    = 400;
+        const SIDE_GAP = Math.round(window.innerWidth * 0.12);
+        const ROTATIONS = [-7, 6, -5, 8]; // slight tilt per image
+        let slideIdx   = 0;
+        const img      = document.getElementById('slide-img');
+
+        function runSlide() {
+            const fromLeft  = slideIdx % 2 === 0;
+            const rot       = ROTATIONS[slideIdx];
+            const onScreenX = fromLeft
+                ? SIDE_GAP
+                : window.innerWidth - IMG_W - SIDE_GAP;
+            const offScreenX = fromLeft
+                ? -(IMG_W + 60)
+                : window.innerWidth + 60;
+            const offRot = fromLeft ? rot - 25 : rot + 25;
+
+            // Reset instantly off-screen
+            img.style.transition = 'none';
+            img.style.left       = offScreenX + 'px';
+            img.style.opacity    = '0';
+            img.style.transform  = `translateY(-50%) rotate(${offRot}deg)`;
+            img.src              = IMAGES[slideIdx];
+            img.offsetHeight;
+
+            // Slide in with rotation settling
+            img.style.transition = 'left 1s cubic-bezier(0.34,1.2,0.64,1), opacity 0.75s ease, transform 1s cubic-bezier(0.34,1.2,0.64,1)';
+            img.style.left       = onScreenX + 'px';
+            img.style.opacity    = '1';
+            img.style.transform  = `translateY(-50%) rotate(${rot}deg)`;
+
+            // Hold, then slide out
+            setTimeout(() => {
+                img.style.transition = 'left 0.75s ease-in, opacity 0.55s ease, transform 0.75s ease-in';
+                img.style.left       = offScreenX + 'px';
+                img.style.opacity    = '0';
+                img.style.transform  = `translateY(-50%) rotate(${offRot}deg)`;
+
+                setTimeout(() => {
+                    slideIdx = (slideIdx + 1) % IMAGES.length;
+                    runSlide();
+                }, 780);
+            }, 3800);
+        }
+
+        setTimeout(runSlide, 400);
+
+        // ── Start button ──
+        const btn    = document.getElementById('start-btn');
+        const screen = document.getElementById('start-screen');
+        const wrap   = document.getElementById('video-wrap');
+        const vid    = document.getElementById('pre-video');
+
+        function goNext() { window.location.href = 'street.html'; }
+
+        btn.addEventListener('click', () => {
+            screen.style.display = 'none';
+            wrap.style.display   = 'block';
+            vid.play().catch(goNext);
+        });
+
+        vid.onended = goNext;
+        vid.onerror = goNext;
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '0') { vid.pause(); vid.dispatchEvent(new Event('ended')); }
+        });
+
+    </script>
+</body>
+</html>

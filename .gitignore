@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+Thumbs.db
+*.log
+
+# Large binary assets (>100MB — GitHub limit)
+audio/3.mp3
+models/food.glb
