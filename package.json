@@ -1,11 +1,11 @@
 {
   "name": "chef-yosef-pizza",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "פיצריית השף יוסף",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win portable"
+    "build": "electron-builder --win nsis"
   },
   "devDependencies": {
     "electron": "^28.3.3",
@@ -19,12 +19,24 @@
     },
     "win": {
       "target": [
-        { "target": "portable" }
+        { "target": "nsis" }
       ]
+    },
+    "asar": false,
+    "nsis": {
+      "include": "build/installer.nsh",
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "פיצריית השף יוסף",
+      "artifactName": "פיצריית השף יוסף 2.0.${ext}"
     },
     "files": [
       "**/*",
       "!dist/**",
+      "!build/**",
       "!node_modules/.cache/**"
     ]
   }

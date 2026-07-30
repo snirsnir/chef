@@ -690,7 +690,9 @@
 
         .celeb-star-wrap {
             display: flex;
-            flex-direction: column;
+            /* row-reverse: under dir=rtl this puts the photo on the right and the
+               star to its left — same order as the in-game achievement corner */
+            flex-direction: row-reverse;
             align-items: center;
             gap: 22px;
             opacity: 0;
@@ -1219,7 +1221,7 @@
     <div id="cooking-overlay">
         <div id="cooking-title">🍕 פיצה בתנור 🔥</div>
         <div id="cooking-bar-wrap"><div id="cooking-bar-fill"></div></div>
-        <div id="cooking-time-label">10 שניות</div>
+        <div id="cooking-time-label">5 שניות</div>
     </div>
 
     <!-- Soft cursor for topping phase -->
@@ -1441,8 +1443,12 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             forward: false,
             backward: false,
             left: false,
-            right: false
+            right: false,
+            up: false,
+            down: false
         };
+
+        let kitchenDoor = null;
 
         // Game state
         const gameState = {
@@ -1530,10 +1536,10 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                 file: 'models/maria.glb',
                 scale: 0.8,  // Slightly bigger
                 speed: 0,  // Static character (not moving)
-                rotation: { x: 0, y: 0, z: 0 },
+                rotation: { x: 0, y: -70, z: 0 },
                 path: {
-                    start: { x: 0.74, y: 0.1, z: -3.13 },
-                    end: { x: 0.74, y: 0.1, z: -3.13 }  // Same as start = stays in place
+                    start: { x: -1.5235, y: 0.1, z: -0.4217 },
+                    end: { x: -1.5235, y: 0.1, z: -0.4217 }  // Same as start = stays in place
                 }
             },
             {
@@ -1560,14 +1566,14 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             {
                 file: 'models/waiter.glb',
                 scale: 0.75,
-                speed: 0.15,  // Walking speed
+                speed: 0.15,
                 rotation: { x: 0, y: 0, z: 0 },
-                waypoints: [  // Complex path with multiple points
-                    { x: 2.55, y: 0.3, z: -4.17 },   // Start
-                    { x: -0.03, y: 0.3, z: -4.03 },  // Middle point
-                    { x: 0.06, y: 0.3, z: 3.69 },    // End point
-                    { x: -0.03, y: 0.3, z: -4.03 },  // Back to middle
-                    { x: 2.55, y: 0.3, z: -4.17 }    // Back to start
+                waypoints: [
+                    { x: 3.4647, y: 0.3, z: -4.1987 },
+                    { x: -0.03,  y: 0.3, z: -4.03 },
+                    { x: 0.06,   y: 0.3, z:  3.69 },
+                    { x: -0.03,  y: 0.3, z: -4.03 },
+                    { x: 3.4647, y: 0.3, z: -4.1987 }
                 ]
             },
             {
@@ -1667,6 +1673,11 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
 
             // Load the restaurant scene
             loadRestaurantScene();
+
+            // Add brick wall (with kitchen door)
+            createBrickWall();
+            // Additional brick walls
+            addBrickWall(1.7586, -3.8880, 3.3281, -3.7957);
 
             // Load characters
             loadCharacters();
@@ -1916,6 +1927,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             if (mixOverlayMesh) { scene.remove(mixOverlayMesh); mixOverlayMesh = null; }
 
             // Remove game-phase meshes
+            removeBowlPourZone();
             if (bowlMesh3D)     { scene.remove(bowlMesh3D);     bowlMesh3D = null; }
             if (doughMesh3D)    { scene.remove(doughMesh3D);    doughMesh3D = null; }
             if (rollingPinMesh) { scene.remove(rollingPinMesh); rollingPinMesh = null; }
@@ -2233,9 +2245,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         const JOSEPH_LINES = [
             '!Mamma Mia',
             'בשביל להכין פיצה אמיתית צריך בצק!',
-            'לבצק צריך ארבעה מרכיבים: קמח, מים שמרים וסוכר',
-            'שמרים הם יצורים חיים זעירים — קטנים כל כך שאי אפשר לראות אותם',
-            'הם אוכלים את הקמח ויוצרים בועות אוויר קטנות. זה מה שגורם לבצק לתפוח ולהיות רך'
+            'לבצק צריך ארבעה מרכיבים: קמח, מים שמרים וסוכר'
         ];
 
         function showJosephDialogue() {
@@ -2250,7 +2260,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             const audio = new Audio('audio/talk1.mp3');
 
             // Audio pauses at these times (seconds); user must advance to continue
-            const pausePoints = [1.374, 4.920, 12.164, 19.097];
+            const pausePoints = [1.374, 4.920];
             let pauseIndex = 0;
             let lineIndex  = 1;   // next line to show on advance
             let waiting    = false;
@@ -2271,17 +2281,6 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                 }
             }, 50);
 
-            audio.addEventListener('ended', () => {
-                clearInterval(poller);
-                textEl.textContent = JOSEPH_LINES[4];
-                hintEl.textContent = 'לחצו Enter או קליק לסיום';
-                hintEl.style.visibility = 'visible';
-                waiting = true;
-                done = true;
-            });
-
-            const shmarimVid = document.getElementById('shmarim-video');
-
             function advance() {
                 if (!waiting) return;
 
@@ -2295,21 +2294,18 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                 textEl.textContent = JOSEPH_LINES[shownIndex];
                 hintEl.style.visibility = 'hidden';
                 waiting = false;
+
                 if (shownIndex === 2) {
+                    // Last line — play sugar.mp3 then end dialogue
                     const sugarAudio = new Audio('audio/sugar.mp3');
                     sugarAudio.play().catch(e => console.log('sugar failed:', e));
                     sugarAudio.addEventListener('ended', () => {
+                        done = true;
                         waiting = true;
-                        hintEl.textContent = 'לחצו Enter או קליק להמשך ←';
+                        hintEl.textContent = 'לחצו Enter או קליק לסיום';
                         hintEl.style.visibility = 'visible';
                     });
                 } else {
-                    if (shownIndex === 3) {
-                        audio.currentTime = 12.165;
-                        pauseIndex = 3;
-                        shmarimVid.style.display = 'block';
-                        shmarimVid.play().catch(e => console.log('shmarim vid failed:', e));
-                    }
                     audio.play().catch(e => console.log('talk1 resume failed:', e));
                 }
             }
@@ -2327,8 +2323,6 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                 clearInterval(poller);
                 audio.pause();
                 audio.src = '';
-                shmarimVid.pause();
-                shmarimVid.style.display = 'none';
                 document.removeEventListener('keydown', onKey);
                 document.removeEventListener('mousedown', onMouseDown);
                 box.style.display = 'none';
@@ -2353,10 +2347,19 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         const HOLD_DISTANCE   = 0.45;
         const BOWL_RADIUS     = 0.4;
 
+        // Invisible column of air standing on the bowl's rim. Aiming anywhere in it
+        // counts as aiming at the bowl, so an ingredient can also be poured in from
+        // above instead of having to hit the bowl itself.
+        let   bowlPourZone     = null;
+        const POUR_ZONE_RADIUS = 0.16;   // a touch wider than the bowl opening (~0.14)
+        const POUR_ZONE_HEIGHT = 0.40;   // how high above the rim you may pour from
+        const POUR_ZONE_BOTTOM = 0.03;   // starts just above the rim
+
         const bowlContentMeshes = [];
         let   mixOverlayMesh    = null;
         let   mixClicksDone     = 0;
         const TOTAL_MIX_CLICKS  = 28;
+        const mixBumpSound      = new Audio('audio/bump2.mp3');
 
         let doughMesh3D    = null;
         let doughPieceMesh = null;
@@ -2411,6 +2414,9 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         let fatCount          = 0;
         let nonCheeseFatCount = 0;
         const MAX_CARB = 4, MAX_PROTEIN = 3, MAX_FAT = 4;
+        // Pizza dough is almost entirely carbohydrate, so the base alone already
+        // fills a fifth of the carbs bar before any topping is placed.
+        const DOUGH_CARBS = MAX_CARB / 5;   // 0.8 of 4 → 20% of the bar
         const TOPPING_HEALTH = {
             0:  { cat: 'fat',     delta: -15 }, // גבינה צהובה
             1:  { cat: 'carb',    delta:  +5 }, // רוטב עגבניות
@@ -2471,7 +2477,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             document.getElementById('health-face').textContent =
                 isHappy ? '😊' : isSad ? '😢' : '😐';
             // Sub bars
-            document.getElementById('carbs-fill').style.width   = (carbsCount   / MAX_CARB    * 100) + '%';
+            document.getElementById('carbs-fill').style.width   = (carbsCount   / MAX_CARB    * 100).toFixed(1) + '%';
             document.getElementById('protein-fill').style.width = (proteinCount / MAX_PROTEIN * 100) + '%';
             document.getElementById('fat-fill').style.width     = (fatCount     / MAX_FAT     * 100) + '%';
         }
@@ -2480,7 +2486,8 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             const info = TOPPING_HEALTH[zi];
             if (!info) return;
             healthScore = Math.max(0, Math.min(100, healthScore - info.delta));
-            if (info.cat === 'carb')    carbsCount   = Math.max(0, carbsCount   - 1);
+            // never drops below the dough's own carbs — the base stays on the pizza
+            if (info.cat === 'carb')    carbsCount   = Math.max(DOUGH_CARBS, carbsCount - 1);
             if (info.cat === 'protein') proteinCount = Math.max(0, proteinCount - 1);
             if (info.cat === 'fat') {
                 fatCount = Math.max(0, fatCount - 1);
@@ -2492,6 +2499,21 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         function resetHealthMeters() {
             healthScore = 50; carbsCount = 0; proteinCount = 0; fatCount = 0; nonCheeseFatCount = 0;
             renderHealthMeter();
+        }
+
+        // Called the moment the flattened dough becomes a pizza base
+        function addDoughCarbs() {
+            carbsCount = Math.max(carbsCount, DOUGH_CARBS);
+            renderHealthMeter();
+        }
+
+        // Alex asked for a protein-rich pizza. Every pizza carries the same dough
+        // carbs, so they are discounted here — he judges the toppings the player
+        // actually chose, exactly as he did before the dough counted towards the bar.
+        function isAlexPizzaGood() {
+            return proteinCount >= 2 &&
+                   (carbsCount - DOUGH_CARBS) <= proteinCount &&
+                   fatCount <= proteinCount;
         }
 
         function showHealthPanel() {
@@ -2566,6 +2588,29 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             }
         }
 
+        function createBowlPourZone() {
+            removeBowlPourZone();
+            const zone = new THREE.Mesh(
+                new THREE.CylinderGeometry(POUR_ZONE_RADIUS, POUR_ZONE_RADIUS, POUR_ZONE_HEIGHT, 16),
+                new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+            );
+            zone.position.set(
+                bowlWorldPos.x,
+                bowlWorldPos.y + POUR_ZONE_BOTTOM + POUR_ZONE_HEIGHT / 2,
+                bowlWorldPos.z
+            );
+            scene.add(zone);
+            bowlPourZone = zone;
+        }
+
+        function removeBowlPourZone() {
+            if (!bowlPourZone) return;
+            scene.remove(bowlPourZone);
+            bowlPourZone.geometry.dispose();
+            bowlPourZone.material.dispose();
+            bowlPourZone = null;
+        }
+
         function startIngredientDrag() {
             document.getElementById('ingredient-hint').style.display = 'block';
             const bravoAudio = new Audio('audio/bravo.mp3');
@@ -2595,9 +2640,11 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                     }
                 }
             } else {
-                // Drop — check if crosshair is aimed at bowl
+                // Drop — check if crosshair is aimed at the bowl, or at the column
+                // of air above it (pouring in from above)
                 const bowlMeshes = [];
                 if (bowlMesh3D) bowlMesh3D.traverse(n => { if (n.isMesh) bowlMeshes.push(n); });
+                if (bowlPourZone) bowlMeshes.push(bowlPourZone);
                 const aimingAtBowl = bowlMeshes.length > 0 &&
                     dragRaycaster.intersectObjects(bowlMeshes).length > 0;
 
@@ -2610,6 +2657,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                         Object.values(ingredientSounds).forEach(s => { s.pause(); s.currentTime = 0; });
                         document.getElementById('ingredient-hint').style.display = 'none';
                         document.removeEventListener('mousedown', onIngredientMouseDown);
+                        removeBowlPourZone();
                         setTimeout(startMixingMode, 700);
                     }
                 } else {
@@ -2670,6 +2718,9 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
 
             document.body.style.cursor = 'grabbing';
             setTimeout(() => { document.body.style.cursor = 'grab'; }, 180);
+
+            mixBumpSound.currentTime = 0;
+            mixBumpSound.play().catch(() => {});
 
             mixClicksDone++;
             const progress = Math.min(mixClicksDone / TOTAL_MIX_CLICKS, 1);
@@ -3045,6 +3096,9 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                 crust.position.set(pos.x, pos.y + 0.022, pos.z);
                 scene.add(crust);
                 pizzaCrustMesh = crust;
+
+                // The dough is now a pizza base — it brings its own carbs with it
+                addDoughCarbs();
             }
 
             if (bowlMesh3D)     { scene.remove(bowlMesh3D);     bowlMesh3D = null; }
@@ -3608,7 +3662,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                 }
 
             } else if (a.phase === 'cook') {
-                const COOK = 10.0;
+                const COOK = 5.0;
                 const t = Math.min(a.elapsed / COOK, 1);
 
                 document.getElementById('cooking-bar-fill').style.width = (t * 100) + '%';
@@ -3690,7 +3744,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                 if (nonCheeseFatCount > 0) { showAntonellaNoFatDialogue(); return; }
                 else              { showAntonellaThankYouFlow(); return; }
             }
-            const alexPizzaGood = proteinCount >= 2 && carbsCount <= proteinCount && fatCount <= proteinCount;
+            const alexPizzaGood = isAlexPizzaGood();
             if (alexIsWaiting && !alexPizzaGood) {
                 gameState.isCutscene = true;
                 if (controls.isLocked) controls.unlock();
@@ -3752,7 +3806,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                     else              showAntonellaThankYouFlow();
                     return;
                 }
-                const alexPizzaGood = proteinCount >= 2 && carbsCount <= proteinCount && fatCount <= proteinCount;
+                const alexPizzaGood = isAlexPizzaGood();
                 if (alexIsWaiting && !alexPizzaGood) {
                     showAlexNoProteinDialogue();
                 } else if (alexIsWaiting && alexPizzaGood) {
@@ -4056,7 +4110,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
 
                 const cornerLeft = window.innerWidth - 112;
                 star.style.transition = 'top 0.85s cubic-bezier(0.34,1.56,0.64,1), left 0.85s cubic-bezier(0.34,1.56,0.64,1), font-size 0.85s ease, transform 0.85s ease';
-                star.style.top       = '70px';
+                star.style.top       = '18px';
                 star.style.left      = cornerLeft + 'px';
                 star.style.fontSize  = '44px';
                 star.style.transform = 'translate(0,0)';
@@ -4145,7 +4199,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
 
                 const cornerLeft2 = window.innerWidth - 112;
                 star.style.transition = 'top 0.85s cubic-bezier(0.34,1.56,0.64,1), left 0.85s cubic-bezier(0.34,1.56,0.64,1), font-size 0.85s ease, transform 0.85s ease';
-                star.style.top       = '132px';
+                star.style.top       = '80px';
                 star.style.left      = cornerLeft2 + 'px';
                 star.style.fontSize  = '44px';
                 star.style.transform = 'translate(0,0)';
@@ -4194,6 +4248,10 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         }
 
         function loadFamilyGlbs() {
+            // Hide waiter when family arrives
+            const waiterChar = characters.find(c => c.modelFile && c.modelFile.includes('waiter'));
+            if (waiterChar && waiterChar.mesh) waiterChar.mesh.visible = false;
+
             const BASE_X = 0.6200, BASE_Y = -0.0004;
             const members = [
                 { file: 'models/girl.glb',  x: BASE_X - 0.42, y: BASE_Y + 0.2, z: -4.10, ry: Math.PI + 0.35 - 1, s: 0.55 },
@@ -4499,7 +4557,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         function showFamilyMixedBadDialogue() {
             _familyRejectDialogue([
                 { speaker: 'אלי',   text: 'שמת לי תוספות שאני לא אוהב',      audio: { src: 'allavobulga.mp3', start: 0,     end: 2.245 } },
-                { speaker: 'אמילי', text: 'גם אני לא אוהבת אבוקדו!! תכין חדש!!', audio: { src: 'allavobulga.mp3', start: 2.245 } },
+                { speaker: 'מעיין', text: 'גם אני לא אוהבת אבוקדו!! תכין חדש!!', audio: { src: 'allavobulga.mp3', start: 2.245 } },
             ]);
         }
 
@@ -4568,7 +4626,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                 // reveal kids corner star alongside Alex & Antonella
                 const star3    = document.getElementById('achievement-star-3');
                 const kidsImg  = document.getElementById('achievement-kids');
-                star3.style.cssText = 'display:block;position:fixed;top:194px;right:68px;font-size:44px;z-index:2000;pointer-events:none;line-height:1;filter:drop-shadow(0 0 14px gold)';
+                star3.style.cssText = 'display:block;position:fixed;top:142px;right:68px;font-size:44px;z-index:2000;pointer-events:none;line-height:1;filter:drop-shadow(0 0 14px gold)';
                 kidsImg.style.display = 'block';
                 requestAnimationFrame(() => requestAnimationFrame(() => {
                     kidsImg.style.opacity = '1';
@@ -5221,6 +5279,239 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         }
 
         // ============================================
+        // BRICK WALL + KITCHEN DOOR
+        // ============================================
+        function createBrickWall() {
+            const WALL_ROT   = -1.3848;
+            const WALL_CX    = 3.0251,  WALL_CZ = -4.8737;
+            const WALL_DIR_X = 0.1851,  WALL_DIR_Z = 0.9827;
+            const WALL_HALF  = 1.147;   // half of total length 2.294
+            const WALL_H     = 2.6;
+            const DOOR_W     = 0.8,     DOOR_H = 2.0,  DEPTH = 0.08;
+            const DOOR_OFF   = 0.619;   // offset of door centre from wall centre
+
+            // ---- Brick canvas texture ----
+            function makeBrickTex() {
+                const cv = document.createElement('canvas');
+                cv.width = 512; cv.height = 256;
+                const c = cv.getContext('2d');
+                c.fillStyle = '#c8a882';
+                c.fillRect(0, 0, cv.width, cv.height);
+                const bW = 64, bH = 32, mort = 4;
+                const cols = ['#8B3A0F','#9B4A1A','#7B300A','#A04820','#923515','#8A3D12'];
+                const rows = Math.ceil(cv.height / bH) + 1;
+                const ncols = Math.ceil(cv.width / bW) + 1;
+                for (let r = 0; r < rows; r++) {
+                    const xOff = (r % 2 === 0) ? 0 : bW / 2;
+                    for (let col = -1; col < ncols; col++) {
+                        const x = col * bW + xOff + mort / 2;
+                        const y = r * bH + mort / 2;
+                        const w = bW - mort, h = bH - mort;
+                        c.fillStyle = cols[Math.abs((r * 7 + col * 3 + r * col) % cols.length)];
+                        c.fillRect(x, y, w, h);
+                        c.fillStyle = 'rgba(255,190,130,0.12)';
+                        c.fillRect(x, y, w, 5);
+                        c.fillStyle = 'rgba(0,0,0,0.18)';
+                        c.fillRect(x, y + h - 5, w, 5);
+                    }
+                }
+                const t = new THREE.CanvasTexture(cv);
+                t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                return t;
+            }
+
+            // ---- Wood door canvas texture ----
+            function makeWoodTex() {
+                const cv = document.createElement('canvas');
+                cv.width = 256; cv.height = 512;
+                const c = cv.getContext('2d');
+                c.fillStyle = '#5C2E0A';
+                c.fillRect(0, 0, cv.width, cv.height);
+                // grain lines
+                for (let i = 0; i < 60; i++) {
+                    const y = (i / 60) * cv.height;
+                    c.fillStyle = `rgba(${i % 2 === 0 ? '160,80,30' : '40,15,5'},${0.06 + (i % 7) * 0.015})`;
+                    c.fillRect(0, y, cv.width, cv.height / 60 + (i % 3));
+                }
+                // two raised panels outline
+                c.strokeStyle = 'rgba(20,8,2,0.45)';
+                c.lineWidth = 5;
+                const pad = 16;
+                c.strokeRect(pad, pad, cv.width - pad * 2, cv.height / 2 - pad * 1.5);
+                c.strokeRect(pad, cv.height / 2 + pad * 0.5, cv.width - pad * 2, cv.height / 2 - pad * 1.5);
+                // panel inner bevel
+                c.strokeStyle = 'rgba(180,100,40,0.18)';
+                c.lineWidth = 2;
+                c.strokeRect(pad + 6, pad + 6, cv.width - pad * 2 - 12, cv.height / 2 - pad * 1.5 - 12);
+                c.strokeRect(pad + 6, cv.height / 2 + pad * 0.5 + 6, cv.width - pad * 2 - 12, cv.height / 2 - pad * 1.5 - 12);
+                // door knob
+                c.fillStyle = '#C8960A';
+                c.beginPath();
+                c.arc(cv.width - 28, cv.height / 2, 8, 0, Math.PI * 2);
+                c.fill();
+                return new THREE.CanvasTexture(cv);
+            }
+
+            const brickTex = makeBrickTex();
+
+            // Helper: add a wall brick segment
+            function addSeg(offsetAlongWall, segLen, segH, yCenter) {
+                const t = brickTex.clone();
+                t.repeat.set(segLen * 2, segH * 3);
+                t.needsUpdate = true;
+                const mesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(segLen, segH, DEPTH),
+                    new THREE.MeshLambertMaterial({ map: t })
+                );
+                mesh.position.set(
+                    WALL_CX + offsetAlongWall * WALL_DIR_X,
+                    yCenter,
+                    WALL_CZ + offsetAlongWall * WALL_DIR_Z
+                );
+                mesh.rotation.y = WALL_ROT;
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                scene.add(mesh);
+            }
+
+            // Left wall segment (P1 end → door left edge)
+            const leftEnd   = DOOR_OFF - DOOR_W / 2;   // 0.219
+            const leftLen   = leftEnd - (-WALL_HALF);   // 1.366
+            const leftCtr   = (-WALL_HALF + leftEnd) / 2; // -0.464
+            addSeg(leftCtr, leftLen, WALL_H, WALL_H / 2);
+
+            // Right wall segment (door right edge → P2 end)
+            const rightStart = DOOR_OFF + DOOR_W / 2;  // 1.019
+            const rightLen   = WALL_HALF - rightStart;  // 0.128
+            const rightCtr   = (rightStart + WALL_HALF) / 2; // 1.083
+            if (rightLen > 0.01) addSeg(rightCtr, rightLen, WALL_H, WALL_H / 2);
+
+            // Transom (above door)
+            const transomH = WALL_H - DOOR_H;           // 0.6
+            addSeg(DOOR_OFF, DOOR_W, transomH, DOOR_H + transomH / 2);
+
+            // ---- Door (pivot at hinge = left edge) ----
+            const hingeOff = DOOR_OFF - DOOR_W / 2;    // 0.219
+            const hingeX   = WALL_CX + hingeOff * WALL_DIR_X;
+            const hingeZ   = WALL_CZ + hingeOff * WALL_DIR_Z;
+
+            const doorPivot = new THREE.Group();
+            doorPivot.position.set(hingeX, 0, hingeZ);
+            doorPivot.rotation.y = WALL_ROT;
+            scene.add(doorPivot);
+
+            const doorMesh = new THREE.Mesh(
+                new THREE.BoxGeometry(DOOR_W, DOOR_H, DEPTH * 1.5),
+                new THREE.MeshLambertMaterial({ map: makeWoodTex() })
+            );
+            doorMesh.position.set(DOOR_W / 2, DOOR_H / 2, 0); // pivot at left edge
+            doorMesh.castShadow = true;
+            doorPivot.add(doorMesh);
+
+            // Door centre world coords (used for distance checks)
+            const doorSound = new Audio('audio/door.mp3');
+            doorSound.volume = 0.4;
+            const closeDoorSound = new Audio('audio/closeDoor.mp3');
+            closeDoorSound.volume = 0.4;
+
+            kitchenDoor = {
+                pivot:        doorPivot,
+                currentAngle: 0,
+                targetAngle:  0,
+                justStarted:  true,  // suppress door.mp3 on the very first trigger
+                sound:        doorSound,
+                closeSound:   closeDoorSound,
+                cx: WALL_CX + DOOR_OFF * WALL_DIR_X,
+                cz: WALL_CZ + DOOR_OFF * WALL_DIR_Z
+            };
+        }
+
+        function updateKitchenDoor(delta) {
+            if (!kitchenDoor) return;
+            const waiter = characters.find(c => c.modelFile && c.modelFile.includes('waiter'));
+            if (!waiter || !waiter.mesh) return;
+
+            const idx  = waiter.currentWaypointIndex;
+            const prog = waiter.waypointProgress;
+
+            // Once waiter leaves the startup segment, allow normal triggering
+            if (kitchenDoor.justStarted && idx !== 0 && idx !== 4) {
+                kitchenDoor.justStarted = false;
+            }
+
+            // Door crosses the wall at prog≈0.09 on seg-0 and prog≈0.91 on seg-3.
+            // Open a bit before the crossing, close shortly after.
+            let desired;
+            if (idx === 0 && prog < 0.30 && !kitchenDoor.justStarted) {
+                desired = -Math.PI / 2;  // exiting kitchen → open outward
+            } else if (idx === 3 && prog > 0.645) {
+                desired =  Math.PI / 2;  // entering kitchen → open inward
+            } else {
+                desired = 0;
+            }
+
+            if (desired !== kitchenDoor.targetAngle) {
+                const wasOpen  = Math.abs(kitchenDoor.targetAngle) > 0.01;
+                const willOpen = Math.abs(desired) > 0.01;
+                kitchenDoor.targetAngle = desired;
+                if (willOpen) {
+                    kitchenDoor.sound.currentTime = 0;
+                    kitchenDoor.sound.play().catch(() => {});
+                } else if (wasOpen) {
+                    kitchenDoor.closeSound.currentTime = 0;
+                    kitchenDoor.closeSound.play().catch(() => {});
+                }
+            }
+
+            kitchenDoor.currentAngle +=
+                (kitchenDoor.targetAngle - kitchenDoor.currentAngle) * Math.min(4.0 * delta, 1);
+            kitchenDoor.pivot.rotation.y = -1.3848 + kitchenDoor.currentAngle;
+        }
+
+        // ============================================
+        // GENERIC BRICK WALL
+        // ============================================
+        function addBrickWall(x1, z1, x2, z2) {
+            const dx  = x2 - x1, dz = z2 - z1;
+            const len = Math.sqrt(dx*dx + dz*dz);
+            const cx  = (x1+x2)/2, cz = (z1+z2)/2;
+            // Align local-X axis with wall direction
+            const ry  = Math.atan2(-dz, dx);
+
+            const cv = document.createElement('canvas');
+            cv.width = 512; cv.height = 256;
+            const c = cv.getContext('2d');
+            c.fillStyle = '#c8a882';
+            c.fillRect(0, 0, cv.width, cv.height);
+            const bW = 64, bH = 32, mort = 4;
+            const brickColors = ['#8B3A0F','#9B4A1A','#7B300A','#A04820','#923515','#8A3D12'];
+            const rows = Math.ceil(cv.height/bH)+1, ncols = Math.ceil(cv.width/bW)+1;
+            for (let r=0; r<rows; r++) {
+                const xOff = (r%2===0)?0:bW/2;
+                for (let col=-1; col<ncols; col++) {
+                    const x=col*bW+xOff+mort/2, y=r*bH+mort/2, w=bW-mort, h=bH-mort;
+                    c.fillStyle = brickColors[Math.abs((r*7+col*3+r*col)%brickColors.length)];
+                    c.fillRect(x,y,w,h);
+                    c.fillStyle='rgba(255,190,130,0.12)'; c.fillRect(x,y,w,5);
+                    c.fillStyle='rgba(0,0,0,0.18)'; c.fillRect(x,y+h-5,w,5);
+                }
+            }
+            const tex = new THREE.CanvasTexture(cv);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(len*2, 2.6*3);
+
+            const mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(len, 2.6, 0.08),
+                new THREE.MeshLambertMaterial({ map: tex })
+            );
+            mesh.position.set(cx, 1.3, cz);
+            mesh.rotation.y = ry;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+        }
+
+        // ============================================
         // RESTAURANT SCENE LOADING (SPZ)
         // ============================================
         async function loadRestaurantScene() {
@@ -5356,6 +5647,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                         if (item.file.includes('bowl')) {
                             bowlMesh3D = mesh;
                             bowlWorldPos.set(item.x, baseY, baseZ);
+                            createBowlPourZone();
                         } else {
                             draggableItems.push({
                                 mesh,
@@ -5564,6 +5856,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             // Move the player
             controls.moveRight(velocity.x);
             controls.moveForward(velocity.z);
+
             clampPlayerToRoom();
 
             // Check if moving
@@ -5607,6 +5900,9 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
 
             // Update characters
             updateCharacters(delta);
+
+            // Animate kitchen door
+            updateKitchenDoor(delta);
 
             // Check interaction zones
             if (gameState.isPlaying) {
@@ -5701,7 +5997,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                     break;
                 }
                 case 6: { // אנטונלה — כוכב אלכס קיים + זווית דלפק + סרטון
-                    _showSettledStar('achievement-star', 'achievement-alex', '70px');
+                    _showSettledStar('achievement-star', 'achievement-alex', '18px');
                     pizzaMeshes.forEach(m => { m.visible = false; });
                     pizzaLights.forEach(l => { l.visible = false; });
                     camera.position.set(...COUNTER_POS);
@@ -5710,8 +6006,8 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                     break;
                 }
                 case 7: { // המשפחה — כוכבי אלכס+אנטונלה קיימים + זווית דלפק + סרטון
-                    _showSettledStar('achievement-star',   'achievement-alex',    '70px');
-                    _showSettledStar('achievement-star-2', 'achievement-grandma', '132px');
+                    _showSettledStar('achievement-star',   'achievement-alex',    '18px');
+                    _showSettledStar('achievement-star-2', 'achievement-grandma', '80px');
                     pizzaMeshes.forEach(m => { m.visible = false; });
                     pizzaLights.forEach(l => { l.visible = false; });
                     camera.position.set(...COUNTER_POS);
@@ -5754,9 +6050,9 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                             }, 900);
                         }, 1600);
                     }
-                    _animStar('achievement-star',   'achievement-alex',    '70px');
-                    setTimeout(() => _animStar('achievement-star-2', 'achievement-grandma', '132px'), 1500);
-                    setTimeout(() => _animStar('achievement-star-3', 'achievement-kids',    '194px'), 3000);
+                    _animStar('achievement-star',   'achievement-alex',    '18px');
+                    setTimeout(() => _animStar('achievement-star-2', 'achievement-grandma', '80px'),  1500);
+                    setTimeout(() => _animStar('achievement-star-3', 'achievement-kids',    '142px'), 3000);
                     setTimeout(playEndVideo, 6000);
                     break;
                 }
