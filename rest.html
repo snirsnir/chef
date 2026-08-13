@@ -1392,6 +1392,9 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         </div>
     </div>
 
+    <!-- Graphics quality tier (classic script — must run before the module) -->
+    <script src="quality.js"></script>
+
     <!-- Import Maps for ES Modules -->
     <script type="importmap">
     {
@@ -1426,6 +1429,45 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             BOB_ROLL_AMOUNT: 0.003,
             PLAYER_RADIUS: 0.4
         };
+
+        // ============================================
+        // GRAPHICS QUALITY
+        // ============================================
+        // Pinned tier from a previous run (or the opening screen), if any.
+        const _storedQuality = ChefQuality.read();
+        let qualityTier = _storedQuality || 'normal';
+        let Q = ChefQuality.settings(qualityTier);
+        // Lights the low tier drops; kept so a live downgrade can remove them.
+        const fillLightObjects = [];
+
+        // Only grade the machine when nothing was decided before.
+        const sampleFrame = _storedQuality
+            ? function () {}
+            : ChefQuality.createFpsWatchdog(function (fps, tooSlow) {
+                  console.log('[quality] measured ' + fps.toFixed(1) + ' fps');
+                  if (tooSlow) applyLowQualityLive();
+                  else ChefQuality.save('normal');
+              });
+
+        function applyLowQualityLive() {
+            qualityTier = 'low';
+            Q = ChefQuality.settings('low');
+            ChefQuality.save('low');
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
+            renderer.shadowMap.enabled = false;
+            fillLightObjects.forEach(l => scene.remove(l));
+            // Turning the shadow map off changes the shaders every lit material
+            // needs, so they have to be rebuilt.
+            scene.traverse(o => {
+                if (o.isMesh && o.material) {
+                    (Array.isArray(o.material) ? o.material : [o.material])
+                        .forEach(m => { m.needsUpdate = true; });
+                }
+            });
+            // antialias is fixed when the WebGL context is created, so it can
+            // only take effect on the next launch — which now starts in 'low'.
+            console.log('[quality] downgraded to low');
+        }
 
         // ============================================
         // GLOBAL VARIABLES
@@ -1648,10 +1690,10 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             camera.rotation.set(CONFIG.START_ROTATION.x, CONFIG.START_ROTATION.y, CONFIG.START_ROTATION.z);
 
             // Create renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: Q.antialias });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
+            renderer.shadowMap.enabled = Q.shadows;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.outputColorSpace = THREE.SRGBColorSpace;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1769,18 +1811,18 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             mainLight.shadow.mapSize.height = 2048;
             scene.add(mainLight);
 
-            // Warm fill lights
+            // Warm fill lights + hemisphere — every one of these multiplies the
+            // per-fragment lighting cost, so the low tier goes without them.
             const fillLight1 = new THREE.PointLight(0xffcc99, 0.5, 20);
             fillLight1.position.set(5, 3, 5);
-            scene.add(fillLight1);
 
             const fillLight2 = new THREE.PointLight(0xffcc99, 0.5, 20);
             fillLight2.position.set(-5, 3, -5);
-            scene.add(fillLight2);
 
-            // Hemisphere light for natural ambient
             const hemiLight = new THREE.HemisphereLight(0xfff5e6, 0x8B7355, 0.4);
-            scene.add(hemiLight);
+
+            fillLightObjects.push(fillLight1, fillLight2, hemiLight);
+            if (Q.fillLights) fillLightObjects.forEach(l => scene.add(l));
         }
 
         // ============================================
@@ -5891,10 +5933,19 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             }
         }
 
-        function animate() {
+        let _nextFrameTime = 0;
+        function animate(now = 0) {
             requestAnimationFrame(animate);
 
+            // Low tier holds a steady 30 — an even frame rate reads as far
+            // smoother than an uneven one that averages higher.
+            if (Q.maxFps) {
+                if (now < _nextFrameTime) return;
+                _nextFrameTime = now + 1000 / Q.maxFps;
+            }
+
             const delta = clock.getDelta();
+            sampleFrame(delta);
 
             updateMovement(delta);
 

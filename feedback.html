@@ -273,6 +273,9 @@
         </div>
     </div>
 
+    <!-- Graphics quality tier (classic script — must run before the module) -->
+    <script src="quality.js"></script>
+
     <script type="importmap">
     {
         "imports": {
@@ -300,6 +303,36 @@
         };
 
         // ── Globals ──
+        // ── Graphics quality (see quality.js) ──
+        const _storedQuality = ChefQuality.read();
+        let qualityTier = _storedQuality || 'normal';
+        let Q = ChefQuality.settings(qualityTier);
+        const fillLightObjects = [];
+
+        const sampleFrame = _storedQuality
+            ? function () {}
+            : ChefQuality.createFpsWatchdog(function (fps, tooSlow) {
+                  console.log('[quality] measured ' + fps.toFixed(1) + ' fps');
+                  if (tooSlow) applyLowQualityLive();
+                  else ChefQuality.save('normal');
+              });
+
+        function applyLowQualityLive() {
+            qualityTier = 'low';
+            Q = ChefQuality.settings('low');
+            ChefQuality.save('low');
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
+            renderer.shadowMap.enabled = false;
+            fillLightObjects.forEach(l => scene.remove(l));
+            scene.traverse(o => {
+                if (o.isMesh && o.material) {
+                    (Array.isArray(o.material) ? o.material : [o.material])
+                        .forEach(m => { m.needsUpdate = true; });
+                }
+            });
+            console.log('[quality] downgraded to low');
+        }
+
         let scene, camera, renderer, controls;
         let clock = new THREE.Clock();
         let splatMesh;
@@ -331,10 +364,10 @@
             camera.position.copy(CONFIG.START_POSITION);
             camera.rotation.set(CONFIG.START_ROTATION.x, CONFIG.START_ROTATION.y, CONFIG.START_ROTATION.z);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: Q.antialias });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
+            renderer.shadowMap.enabled = Q.shadows;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.outputColorSpace = THREE.SRGBColorSpace;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -379,10 +412,11 @@
             sun.shadow.camera.right = sun.shadow.camera.top = 50;
             sun.shadow.bias = -0.0001;
             scene.add(sun);
+            // Dropped by the low tier — see quality.js
             const fillLight = new THREE.DirectionalLight(0xc2d1ff, 0.4);
             fillLight.position.set(-30, 20, -30);
-            scene.add(fillLight);
-            scene.add(new THREE.HemisphereLight(0x87CEEB, 0x8B7355, 0.5));
+            fillLightObjects.push(fillLight, new THREE.HemisphereLight(0x87CEEB, 0x8B7355, 0.5));
+            if (Q.fillLights) fillLightObjects.forEach(l => scene.add(l));
         }
 
         let dialogueActive = false;
@@ -635,9 +669,17 @@
             document.addEventListener('mousedown', onMouse);
         }
 
-        function animate() {
+        let _nextFrameTime = 0;
+        function animate(now = 0) {
             requestAnimationFrame(animate);
+
+            if (Q.maxFps) {
+                if (now < _nextFrameTime) return;
+                _nextFrameTime = now + 1000 / Q.maxFps;
+            }
+
             const delta = clock.getDelta();
+            sampleFrame(delta);
             updateMovement(delta);
             if (josephMixer) josephMixer.update(delta);
 

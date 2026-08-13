@@ -125,13 +125,26 @@
         #start-btn:hover  { transform: scale(1.07); }
         #start-btn:active { transform: scale(0.96); }
 
-        /* ── Video ── */
-        #video-wrap {
-            display: none;
-            position: absolute;
-            inset: 0;
+
+        /* ── Graphics quality toggle (mirrors the updater button, other side) ── */
+        #quality-btn {
+            position: fixed; bottom: 20px; left: 20px; z-index: 9999;
+            font-family: 'Varela Round', Arial, sans-serif; font-size: 13px;
+            color: rgba(255,215,0,0.6); background: rgba(200,132,58,0.08);
+            border: 1px solid rgba(200,132,58,0.35); border-radius: 20px;
+            padding: 8px 18px; cursor: pointer; direction: rtl;
+            transition: color 0.2s, background 0.2s, border-color 0.2s;
         }
-        #video-wrap video { width: 100%; height: 100%; object-fit: cover; }
+        #quality-btn:hover {
+            color: #ffd700; background: rgba(200,132,58,0.2);
+            border-color: rgba(200,132,58,0.7);
+        }
+        #quality-hint {
+            position: fixed; bottom: 56px; left: 20px; z-index: 9999;
+            font-family: 'Varela Round', Arial, sans-serif; font-size: 11px;
+            color: rgba(255,215,0,0.4); direction: rtl; max-width: 230px;
+            line-height: 1.5; pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -149,10 +162,10 @@
         <button id="start-btn">לחצו להתחלה</button>
     </div>
 
-    <div id="video-wrap">
-        <video id="pre-video" src="video/pre.mp4" playsinline></video>
-    </div>
+    <div id="quality-hint"></div>
+    <button id="quality-btn">גרפיקה</button>
 
+    <script src="quality.js"></script>
     <script>
         // ── Slideshow ──
         const IMAGES   = ['images/pre1.png','images/pre2.png','images/pre3.png','images/pre4.png'];
@@ -204,25 +217,47 @@
         setTimeout(runSlide, 400);
 
         // ── Start button ──
-        const btn    = document.getElementById('start-btn');
-        const screen = document.getElementById('start-screen');
-        const wrap   = document.getElementById('video-wrap');
-        const vid    = document.getElementById('pre-video');
+        // Goes straight to the street. The pre.mp4 intro that used to play here
+        // was removed, so there is nothing left to skip on this screen.
+        const btn = document.getElementById('start-btn');
 
         function goNext() { window.location.href = 'street.html'; }
 
-        btn.addEventListener('click', () => {
-            screen.style.display = 'none';
-            wrap.style.display   = 'block';
-            vid.play().catch(goNext);
-        });
+        btn.addEventListener('click', goNext);
 
-        vid.onended = goNext;
-        vid.onerror = goNext;
+        // ── Graphics quality toggle ──
+        // Cycles אוטומטית → חלשה → רגילה. "אוטומטית" lets the first scene
+        // measure its own frame rate and pin a tier; the other two force it,
+        // which is what you want when preparing a lab machine in advance.
+        (() => {
+            const btn  = document.getElementById('quality-btn');
+            const hint = document.getElementById('quality-hint');
+            const LABELS = {
+                auto:   { text: '⚙ גרפיקה: אוטומטית', hint: 'המשחק ימדוד את המחשב ויתאים את עצמו' },
+                low:    { text: '🐢 גרפיקה: חלשה',    hint: 'פחות פיקסלים, בלי צללים — למחשבים חלשים' },
+                normal: { text: '⚡ גרפיקה: רגילה',   hint: 'איכות מלאה — למחשבים חזקים' }
+            };
+            const NEXT = { auto: 'low', low: 'normal', normal: 'auto' };
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === '0') { vid.pause(); vid.dispatchEvent(new Event('ended')); }
-        });
+            function current() { return ChefQuality.read() || 'auto'; }
+
+            function paint() {
+                const l = LABELS[current()];
+                btn.textContent = l.text;
+                hint.textContent = l.hint;
+            }
+
+            btn.addEventListener('click', () => {
+                const next = NEXT[current()];
+                if (!ChefQuality.save(next === 'auto' ? null : next)) {
+                    hint.textContent = '⚠ לא ניתן לשמור את ההגדרה במחשב הזה';
+                    return;
+                }
+                paint();
+            });
+
+            paint();
+        })();
 
     </script>
 </body>

@@ -470,6 +470,9 @@
     </div>
 
     <!-- Import Maps for ES Modules -->
+    <!-- Graphics quality tier (classic script — must run before the module) -->
+    <script src="quality.js"></script>
+
     <script type="importmap">
     {
         "imports": {
@@ -552,6 +555,38 @@
         // ============================================
         // GLOBAL VARIABLES
         // ============================================
+        // ============================================
+        // GRAPHICS QUALITY  (see quality.js)
+        // ============================================
+        const _storedQuality = ChefQuality.read();
+        let qualityTier = _storedQuality || 'normal';
+        let Q = ChefQuality.settings(qualityTier);
+        const fillLightObjects = [];
+
+        const sampleFrame = _storedQuality
+            ? function () {}
+            : ChefQuality.createFpsWatchdog(function (fps, tooSlow) {
+                  console.log('[quality] measured ' + fps.toFixed(1) + ' fps');
+                  if (tooSlow) applyLowQualityLive();
+                  else ChefQuality.save('normal');
+              });
+
+        function applyLowQualityLive() {
+            qualityTier = 'low';
+            Q = ChefQuality.settings('low');
+            ChefQuality.save('low');
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
+            renderer.shadowMap.enabled = false;
+            fillLightObjects.forEach(l => scene.remove(l));
+            scene.traverse(o => {
+                if (o.isMesh && o.material) {
+                    (Array.isArray(o.material) ? o.material : [o.material])
+                        .forEach(m => { m.needsUpdate = true; });
+                }
+            });
+            console.log('[quality] downgraded to low');
+        }
+
         let scene, camera, renderer;
         let controls;
         let clock = new THREE.Clock();
@@ -586,16 +621,6 @@
                 path: {
                     start: { x: 3.59, y: 0, z: -17.92 },
                     end: { x: 3.59, y: 0, z: -17.92 }  // Same as start = stays in place
-                }
-            },
-            {
-                file: 'models/pizz.glb',
-                scale: 4,
-                speed: 0.04,
-                rotation: { x: 0, y: 0, z: 0 },
-                path: {
-                    start: { x: 4.21, y: 3, z: -12.84 },
-                    end: { x: -0.30, y: 3, z: -2.63 }
                 }
             },
             {
@@ -814,10 +839,10 @@
             clipPlaneZ = new THREE.Plane(new THREE.Vector3(0, 0, -1), 50);
 
             // Create renderer with clipping support
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: Q.antialias });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
+            renderer.shadowMap.enabled = Q.shadows;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.outputColorSpace = THREE.SRGBColorSpace;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -955,14 +980,15 @@
             sunLight.shadow.bias = -0.0001;
             scene.add(sunLight);
 
-            // Fill light from opposite side
+            // Fill + hemisphere light — dropped by the low tier, each one adds
+            // per-fragment lighting cost on every lit material in the scene.
             const fillLight = new THREE.DirectionalLight(0xc2d1ff, 0.4);
             fillLight.position.set(-30, 20, -30);
-            scene.add(fillLight);
 
-            // Hemisphere light for natural sky/ground color
             const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x8B7355, 0.5);
-            scene.add(hemiLight);
+
+            fillLightObjects.push(fillLight, hemiLight);
+            if (Q.fillLights) fillLightObjects.forEach(l => scene.add(l));
 
             // Add subtle fog for atmosphere
             scene.fog = new THREE.FogExp2(0xd4e5f7, 0.005);
@@ -2029,10 +2055,17 @@
             checkRestaurantEntrance();
         }
 
-        function animate() {
+        let _nextFrameTime = 0;
+        function animate(now = 0) {
             requestAnimationFrame(animate);
 
+            if (Q.maxFps) {
+                if (now < _nextFrameTime) return;
+                _nextFrameTime = now + 1000 / Q.maxFps;
+            }
+
             const delta = clock.getDelta();
+            sampleFrame(delta);
 
             updateMovement(delta);
 
