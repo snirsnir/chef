@@ -332,9 +332,17 @@
             border: none;
             border-radius: 30px;
             cursor: pointer;
-            transition: transform 0.15s;
+            transition: opacity 0.4s ease;
             z-index: 1101;
+            opacity: 0;
+            pointer-events: none;
         }
+        #start-video-overlay button.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #start-video-overlay button:hover { transform: scale(1.08); }
+        #start-video-overlay button:active { transform: scale(0.95); }
         #start-video-overlay button:hover { transform: scale(1.08); }
         #start-video-overlay button:active { transform: scale(0.95); }
 
@@ -1409,6 +1417,15 @@
             startVid.onerror = showStartScreen;
 
             const startBtn = document.getElementById('start-video-btn');
+
+            // Show button only in last 2 seconds of video
+            startVid.addEventListener('timeupdate', () => {
+                const timeRemaining = startVid.duration - startVid.currentTime;
+                if (timeRemaining <= 2 && timeRemaining > 0) {
+                    startBtn.classList.add('show');
+                }
+            });
+
             startBtn.addEventListener('click', () => {
                 startVid.pause();
                 startVid.dispatchEvent(new Event('ended'));
