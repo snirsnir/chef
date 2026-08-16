@@ -1,0 +1,2112 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פיצריית השף יוסף - מילאנו</title>
+    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Varela Round', Arial, sans-serif;
+            overflow: hidden;
+            background: #1a1a2e;
+            cursor: default;
+        }
+
+        #scene-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        .loading-title {
+            font-size: 36px;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top-color: #ff6b6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            color: #aaa;
+        }
+
+        /* Start Screen (Click to Start) */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            color: white;
+            cursor: pointer;
+        }
+
+        .start-title {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .start-subtitle {
+            font-size: 24px;
+            color: #ffd700;
+            margin-bottom: 40px;
+        }
+
+        .start-instruction {
+            font-size: 20px;
+            padding: 20px 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        /* Controls Info */
+        #controls-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-size: 14px;
+            z-index: 100;
+            display: none;
+            text-align: center;
+        }
+
+        #controls-info span {
+            margin: 0 15px;
+        }
+
+        /* Crosshair */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            pointer-events: none;
+            z-index: 100;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            display: none;
+        }
+
+        /* Mission Popup */
+        #mission-popup {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(240,240,255,0.95));
+            border: 3px solid #ff6b6b;
+            border-radius: 20px;
+            padding: 15px 30px;
+            z-index: 100;
+            display: none;
+            animation: bounce 2s ease-in-out infinite;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        .mission-text {
+            font-size: 18px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Mission Announce (large center → shrinks to top) */
+        #mission-announce {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, rgba(255,255,255,0.97), rgba(240,240,255,0.97));
+            border: 3px solid #ff6b6b;
+            border-radius: 20px;
+            padding: 40px 70px;
+            z-index: 200;
+            text-align: center;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+            transition: top 1s cubic-bezier(0.34,1.2,0.64,1),
+                        transform 1s cubic-bezier(0.34,1.2,0.64,1),
+                        padding 1s ease,
+                        opacity 0.4s ease;
+        }
+        #mission-announce .announce-text {
+            font-size: 28px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            justify-content: center;
+            transition: font-size 1s ease;
+        }
+
+        /* Position Debug (for development) */
+        #position-debug {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.85);
+            color: #0f0;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 100;
+            display: none;
+            min-width: 180px;
+        }
+
+        #position-debug .axis-label {
+            display: inline-block;
+            width: 20px;
+            font-weight: bold;
+        }
+
+        #position-debug .x-axis { color: #ff4444; }
+        #position-debug .y-axis { color: #44ff44; }
+        #position-debug .z-axis { color: #4444ff; }
+
+        #position-debug .section-title {
+            color: #fff;
+            font-weight: bold;
+            margin-top: 8px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 2px;
+        }
+
+        #position-debug .section-title:first-child {
+            margin-top: 0;
+        }
+
+        /* Boundary Points Editor */
+        #boundary-editor {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.9);
+            color: #0f0;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            z-index: 100;
+            display: none;
+            max-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        #boundary-editor .title {
+            color: #ffd700;
+            font-size: 14px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ffd700;
+            padding-bottom: 5px;
+        }
+
+        #boundary-editor .instructions {
+            color: #aaa;
+            margin-bottom: 10px;
+            font-size: 10px;
+        }
+
+        #boundary-editor .point {
+            color: #0ff;
+            margin: 3px 0;
+        }
+
+        #boundary-editor .point-count {
+            color: #ff0;
+            margin-top: 10px;
+        }
+
+        #boundary-editor button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #666;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        #boundary-editor button:hover {
+            background: #555;
+        }
+
+        /* Start video overlay */
+        #start-video-overlay {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%; height: 90%;
+            background: rgba(20, 8, 0, 0.65);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 2px solid #c8a96e;
+            border-radius: 20px;
+            z-index: 1100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 50px 60px;
+            box-shadow: 0 0 60px rgba(200,169,110,0.2);
+        }
+        #start-video-overlay video {
+            width: 100%; height: 100%;
+            border-radius: 16px;
+            object-fit: contain;
+        }
+
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            z-index: 100;
+        }
+
+        .mobile-btn-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 5px 0;
+        }
+
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .mobile-btn:active {
+            background: rgba(255,255,255,0.4);
+            transform: scale(0.95);
+        }
+
+        /* Interaction Prompt */
+        #interaction-prompt {
+            position: absolute;
+            bottom: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            z-index: 100;
+            display: none;
+            border: 2px solid #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <div id="scene-container"></div>
+
+    <!-- Start video overlay -->
+    <div id="start-video-overlay">
+        <video id="start-video" src="video/start.mp4" playsinline></video>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <h1 class="loading-title">פיצריית השף יוסף</h1>
+        <div class="loading-spinner"></div>
+        <p class="loading-text">טוען את הרחוב האיטלקי...</p>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1 class="start-title">ברוכים הבאים למילאנו!</h1>
+        <h2 class="start-subtitle">פיצריית השף יוסף מחכה לכם</h2>
+        <p class="start-instruction">לחצו כדי להתחיל</p>
+    </div>
+
+    <!-- Crosshair -->
+    <div id="crosshair">+</div>
+
+    <!-- Mission Announce (large center, animates to top) -->
+    <div id="mission-announce">
+        <div class="announce-text">
+            <span>🎯</span>
+            <span>חפשו את הכניסה לפיצריה שלי! בשביל לנוע, השתמשו בחיצים במקלדת ובעכבר</span>
+        </div>
+    </div>
+
+    <!-- Mission Popup -->
+    <div id="mission-popup">
+        <div class="mission-text">
+            <span>🎯</span>
+            <span id="mission-text-content">חפשו את הכניסה לפיצריה שלי! בשביל לנוע, השתמשו בחיצים במקלדת ובעכבר</span>
+        </div>
+    </div>
+
+    <!-- Controls Info -->
+    <div id="controls-info">
+        <span>W/↑ קדימה</span>
+        <span>S/↓ אחורה</span>
+        <span>A/← שמאלה</span>
+        <span>D/→ ימינה</span>
+        <span>עכבר - הסתכלות</span>
+        <span>ESC - יציאה</span>
+    </div>
+
+    <!-- Position Debug -->
+    <div id="position-debug">
+        <div class="section-title">Position</div>
+        <div><span class="axis-label x-axis">X:</span> <span id="pos-x">0</span></div>
+        <div><span class="axis-label y-axis">Y:</span> <span id="pos-y">0</span></div>
+        <div><span class="axis-label z-axis">Z:</span> <span id="pos-z">0</span></div>
+        <div class="section-title">Rotation (deg)</div>
+        <div><span class="axis-label x-axis">X:</span> <span id="rot-x">0</span></div>
+        <div><span class="axis-label y-axis">Y:</span> <span id="rot-y">0</span></div>
+        <div><span class="axis-label z-axis">Z:</span> <span id="rot-z">0</span></div>
+        <div style="margin-top: 10px; color: #ffd700; font-size: 10px;">P = סמן נקודה | C = נקה</div>
+    </div>
+
+    <!-- Boundary Editor -->
+    <div id="boundary-editor">
+        <div class="title">Boundary Points Editor</div>
+        <div class="instructions">לחץ P כדי לסמן נקודה במיקום הנוכחי</div>
+        <div id="points-list"></div>
+        <div class="point-count">נקודות: <span id="point-count">0</span></div>
+        <button id="copy-points">העתק לקוד</button>
+        <button id="clear-points">נקה הכל</button>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+        <div class="mobile-btn-row">
+            <button class="mobile-btn" id="btn-forward">⬆️</button>
+        </div>
+        <div class="mobile-btn-row">
+            <button class="mobile-btn" id="btn-left">⬅️</button>
+            <button class="mobile-btn" id="btn-backward">⬇️</button>
+            <button class="mobile-btn" id="btn-right">➡️</button>
+        </div>
+    </div>
+
+    <!-- Interaction Prompt -->
+    <div id="interaction-prompt">
+        לחצו <strong>קליק</strong> בעכבר או <strong>Enter</strong> כדי להיכנס לפיצרייה
+    </div>
+
+    <!-- Import Maps for ES Modules -->
+    <!-- Graphics quality tier (classic script — must run before the module) -->
+    <script src="quality.js"></script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+            "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/0.1.10/spark.module.js"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { SplatMesh, SplatLoader } from '@sparkjsdev/spark';
+
+        // ============================================
+        // GAME CONFIGURATION
+        // ============================================
+        const CONFIG = {
+            PLAYER_HEIGHT: 0,
+            PLAYER_SPEED: 2.5, // 50% slower
+            MOUSE_SENSITIVITY: 0.002,
+            START_POSITION: new THREE.Vector3(6.98, 0, -0.28),
+            START_ROTATION: new THREE.Vector3(-2.05 * Math.PI / 180, 66.91 * Math.PI / 180, 1.88 * Math.PI / 180),
+            // Restaurant entrance position (adjust after loading model)
+            RESTAURANT_ENTRANCE: new THREE.Vector3(5.05, 0, -16.78),
+            ENTRANCE_RADIUS: 3,
+            DEBUG_MODE: false,
+            USE_SPZ: true, // Set to true to use SPZ, false for GLB
+            // Head bobbing settings
+            BOB_FREQUENCY: 8, // How fast the bobbing is
+            BOB_VERTICAL_AMOUNT: 0.03, // Up/down movement
+            BOB_HORIZONTAL_AMOUNT: 0.015, // Left/right sway
+            BOB_ROLL_AMOUNT: 0.003, // Slight head tilt
+            PLAYER_RADIUS: 0.4 // Collision radius
+        };
+
+        // Street boundary walls (from boundary editor)
+        const STREET_WALLS = [
+            { x1: 9.83, z1: 2.65, x2: 2.52, z2: -0.30 },
+            { x1: 2.52, z1: -0.30, x2: 1.56, z2: -0.37 },
+            { x1: 1.56, z1: -0.37, x2: -2.46, z2: 7.67 },
+            { x1: -2.46, z1: 7.67, x2: -8.49, z2: 4.32 },
+            { x1: -8.49, z1: 4.32, x2: -5.44, z2: -3.48 },
+            { x1: -5.44, z1: -3.48, x2: -7.86, z2: -5.77 },
+            { x1: -7.86, z1: -5.77, x2: -6.96, z2: -6.72 },
+            { x1: -6.96, z1: -6.72, x2: -2.43, z2: -3.90 },
+            { x1: -2.43, z1: -3.90, x2: 1.72, z2: -11.37 },
+            { x1: 1.72, z1: -11.37, x2: 0.40, z2: -19.26 },
+            { x1: 0.40, z1: -19.26, x2: 0.82, z2: -22.49 },
+            { x1: 0.82, z1: -22.49, x2: 7.93, z2: -23.75 },
+            { x1: 7.93, z1: -23.75, x2: 5.84, z2: -21.34 },
+            { x1: 5.84, z1: -21.34, x2: 5.27, z2: -15.33 },
+            { x1: 5.27, z1: -15.33, x2: 7.86, z2: -14.54 },
+            { x1: 7.86, z1: -14.54, x2: 5.10, z2: -11.93 },
+            { x1: 5.10, z1: -11.93, x2: 4.11, z2: -10.57 },
+            { x1: 4.11, z1: -10.57, x2: 1.93, z2: -3.96 },
+            { x1: 1.93, z1: -3.96, x2: 10.35, z2: -0.49 },
+            { x1: 10.35, z1: -0.49, x2: 8.61, z2: 2.18 },
+            { x1: 8.61, z1: 2.18, x2: 9.83, z2: 2.65 }
+        ];
+
+        // Height zones - polygonal areas with specific Y heights
+        const HEIGHT_ZONES = [
+            {
+                // Polygon vertices (clockwise or counter-clockwise)
+                vertices: [
+                    { x: 2.03, z: -11.09 },
+                    { x: 0.81, z: -19.34 },
+                    { x: 1.14, z: -21.83 },
+                    { x: 6.34, z: -23.03 },
+                    { x: 3.90, z: -10.96 },
+                    { x: 2.06, z: -11.81 }
+                ],
+                height: 0.25  // Y height inside this zone
+            }
+        ];
+
+        // ============================================
+        // GLOBAL VARIABLES
+        // ============================================
+        // ============================================
+        // GRAPHICS QUALITY  (see quality.js)
+        // ============================================
+        const _storedQuality = ChefQuality.read();
+        let qualityTier = _storedQuality || 'normal';
+        let Q = ChefQuality.settings(qualityTier);
+        const fillLightObjects = [];
+
+        const sampleFrame = _storedQuality
+            ? function () {}
+            : ChefQuality.createFpsWatchdog(function (fps, tooSlow) {
+                  console.log('[quality] measured ' + fps.toFixed(1) + ' fps');
+                  if (tooSlow) applyLowQualityLive();
+                  else ChefQuality.save('normal');
+              });
+
+        function applyLowQualityLive() {
+            qualityTier = 'low';
+            Q = ChefQuality.settings('low');
+            ChefQuality.save('low');
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
+            renderer.shadowMap.enabled = false;
+            fillLightObjects.forEach(l => scene.remove(l));
+            scene.traverse(o => {
+                if (o.isMesh && o.material) {
+                    (Array.isArray(o.material) ? o.material : [o.material])
+                        .forEach(m => { m.needsUpdate = true; });
+                }
+            });
+            console.log('[quality] downgraded to low');
+        }
+
+        let scene, camera, renderer;
+        let controls;
+        let clock = new THREE.Clock();
+        let streetModel;
+        let splatMesh;
+
+        // Walking person
+        let walkingMan;
+        let walkingManMixer;
+        let walkingManPath = {
+            start: new THREE.Vector3(2.86, -0.8, -9.55),
+            end: new THREE.Vector3(-0.30, -0.8, -2.63),
+            progress: 0,
+            speed: 0.06, // Speed of walking (faster)
+            direction: 1 // 1 = forward, -1 = backward
+        };
+
+        // Multiple walking characters with custom paths
+        // Each character has: file, scale, speed, rotation (in degrees), and path (start/end with x,y,z)
+        let characters = [];
+        let spatialAudioCtx = null;
+
+        const staticSpatialSounds = [
+            { src: 'audio/waterf.mp3', x: -1.41, y: 0.00, z: -1.04, refDistance: 2, maxDistance: 20, rolloff: 2 }
+        ];
+        const characterModels = [
+            {
+                file: 'models/pizza_time.glb',
+                scale: 0.2,
+                speed: 0,  // Static character (not moving)
+                rotation: { x: 20, y: 2, z: 0 },  // Facing opposite direction
+                path: {
+                    start: { x: 3.59, y: 0, z: -17.92 },
+                    end: { x: 3.59, y: 0, z: -17.92 }  // Same as start = stays in place
+                }
+            },
+            {
+                file: 'models/catwalk.glb',
+                scale: 0.010,
+                speed: 0.06,
+                rotation: { x: 0, y: 0, z: 0 },
+                path: {
+                    start: { x: -7.18, y: -0.8, z: 4.51 },
+                    end: { x: 4.43, y: -0.8, z: -2.33 }
+                }
+            },
+            {
+                file: 'models/horse.glb',
+                scale: 0.05,
+                speed: 0.07,
+                rotation: { x: 0, y: 0, z: 0 },
+                audio: 'audio/horse.mp3',
+                volume: 0.3,
+                path: {
+                    // Multi-segment path with turn
+                    segments: [
+                        {
+                            start: { x: 2.48, y: -0.91, z: -10.60 },
+                            end: { x: -1.04, y: -0.91, z: -2.49 }
+                        },
+                        {
+                            start: { x: -1.04, y: -1, z: -2.49 },
+                            end: { x: -6.09, y: -1, z: -5.71 }
+                        }
+                    ]
+                }
+            },
+            {
+                file: 'models/dog.glb',
+                scale: 0.05,
+                speed: 0.08,
+                rotation: { x: 0, y: 90, z: 0 },
+                path: {
+                    start: { x: -2.71, y: -0.8, z: 4.49 },
+                    end: { x: -5.22, y: -0.8, z: -2.91 }
+                }
+            },
+            {
+                file: 'models/female.glb',
+                scale: 0.006,
+                speed: 0.0,
+                rotation: { x: 0, y: 0, z: 0 },  // Rotated 90 degrees on Y axis
+                path: {
+                    start: { x: -5.82, y: -0.8, z: 1.39 },
+                    end: { x: -5.82, y: -0.8, z: 1.39 }
+                }
+            },
+            {
+                file: 'models/eli.glb',
+                scale: 0.5,
+                speed: 0,
+                rotation: { x: 0, y: 0, z: 0 },
+                audio: 'audio/eli.mp3',
+                path: {
+                    start: { x: 3.57, y: -0.5, z: -18.16 },
+                    end: { x: 3.57, y: -0.5, z: -18.16 }  // Same as start = stays in place
+                }
+            },
+            {
+                file: 'models/snir.glb',
+                scale: 0.5,
+                speed: 0,  // Static character (not moving)
+                rotation: { x: 0, y: 70, z: 0 },
+                path: {
+                    start: { x: -5.81, y: -0.8, z: -1.11 },
+                    end: { x: -5.81, y: -0.8, z: -1.11 }  // Same as start = stays in place
+                }
+            },
+            {
+                file: 'models/benny.glb',
+                scale: 0.5,
+                speed: 0.15,
+                rotation: { x: 0, y: 0, z: 0 },
+                audio: 'audio/memaher.mp3',
+                volume: 0.3,
+                path: {
+                    start: { x: -5.14, y: -0.8, z: -4.68 },
+                    end: { x: 8.9, y: -0.8, z: 0.99 }
+                }
+            },
+            {
+                file: 'models/ziv.glb',
+                scale: 0.5,
+                speed: 0,  // Static character (not moving)
+                rotation: { x: 0, y: 0, z: 0 },
+                path: {
+                    start: { x: 1.83, y: -0.8, z: -10.42 },
+                    end: { x: 1.83, y: -0.8, z: -10.42 }  // Same as start = stays in place
+                }
+            },
+            {
+                file: 'models/rest.glb',
+                scale: 0.2,
+                speed: 0,  // Static character (not moving)
+                rotation: { x: 0, y: 90, z: 0 },
+                path: {
+                    start: { x: 5.08, y: -0.5, z: -16.24 },
+                    end: { x: 5.08, y: -0.5, z: -16.24 }  // Same as start = stays in place
+                }
+            }
+        ];
+
+        // Define walkable area boundaries (based on STREET_WALLS)
+        const walkableArea = {
+            minX: -8.5,
+            maxX: 10.5,
+            minZ: -23,
+            maxZ: 8
+        };
+
+        // Clipping planes
+        let clipPlaneX, clipPlaneY, clipPlaneZ;
+        let axesHelper, gridHelper;
+
+        // Movement state
+        const moveState = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false
+        };
+
+        // Game state
+        const gameState = {
+            isLoaded: false,
+            isPlaying: false,
+            canEnterRestaurant: false,
+            splatReady: false // Track if splat mesh is ready for updates
+        };
+
+        // Boundary editor
+        const boundaryPoints = [];
+        function addBoundaryPoint() {
+            const x = camera.position.x.toFixed(2);
+            const z = camera.position.z.toFixed(2);
+            boundaryPoints.push({ x: parseFloat(x), z: parseFloat(z) });
+            updatePointsList();
+            console.log(`Point added: X=${x}, Z=${z}`);
+        }
+
+        function updatePointsList() {
+            const list = document.getElementById('points-list');
+            const count = document.getElementById('point-count');
+            list.innerHTML = boundaryPoints.map((p, i) =>
+                `<div class="point">${i + 1}. X: ${p.x}, Z: ${p.z}</div>`
+            ).join('');
+            count.textContent = boundaryPoints.length;
+        }
+
+        function copyPointsToCode() {
+            if (boundaryPoints.length < 2) {
+                alert('צריך לפחות 2 נקודות!');
+                return;
+            }
+            // Generate wall segments from consecutive points
+            let code = 'const STREET_WALLS = [\n';
+            for (let i = 0; i < boundaryPoints.length; i++) {
+                const p1 = boundaryPoints[i];
+                const p2 = boundaryPoints[(i + 1) % boundaryPoints.length];
+                code += `    { x1: ${p1.x}, z1: ${p1.z}, x2: ${p2.x}, z2: ${p2.z} },\n`;
+            }
+            code += '];';
+
+            navigator.clipboard.writeText(code).then(() => {
+                alert('הקוד הועתק! הדבק אותו לי בצ\'אט');
+            });
+            console.log(code);
+        }
+
+        function clearPoints() {
+            boundaryPoints.length = 0;
+            updatePointsList();
+        };
+
+        // Velocity for smooth movement
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+
+        // Head bobbing
+        let bobTime = 0;
+        let currentBobAmount = 0;
+
+        // Audio
+        let walkSound;
+        let peopleSound;
+        let ambientSounds = [];
+        let isWalking = false;
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); // Sky blue
+
+            // Create camera
+            camera = new THREE.PerspectiveCamera(
+                60,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.copy(CONFIG.START_POSITION);
+            camera.rotation.set(CONFIG.START_ROTATION.x, CONFIG.START_ROTATION.y, CONFIG.START_ROTATION.z);
+
+            // Create clipping planes
+            clipPlaneX = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 50);
+            clipPlaneY = new THREE.Plane(new THREE.Vector3(0, -1, 0), 50);
+            clipPlaneZ = new THREE.Plane(new THREE.Vector3(0, 0, -1), 50);
+
+            // Create renderer with clipping support
+            renderer = new THREE.WebGLRenderer({ antialias: Q.antialias });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
+            renderer.shadowMap.enabled = Q.shadows;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            renderer.localClippingEnabled = true; // Enable clipping
+            document.getElementById('scene-container').appendChild(renderer.domElement);
+
+            // Setup lighting
+            setupLighting();
+
+            // Setup audio
+            setupAudio();
+
+            // Setup controls
+            setupControls();
+
+            // Setup event listeners
+            setupEventListeners();
+
+            // Load the scene
+            if (CONFIG.USE_SPZ) {
+                loadSPZModel();
+            } else {
+                loadGLBModel();
+            }
+
+            // Load walking person
+            loadWalkingPerson();
+
+            // Load all wandering characters
+            loadWanderingCharacters();
+
+            // Load PNG image
+            loadImagePlane();
+
+            // Load menu sign
+            loadMenuGlb();
+
+            // Start animation loop
+            animate();
+
+            // Show debug if enabled
+            if (CONFIG.DEBUG_MODE) {
+                document.getElementById('position-debug').style.display = 'block';
+                document.getElementById('boundary-editor').style.display = 'block';
+
+                // Setup boundary editor buttons
+                document.getElementById('copy-points').addEventListener('click', copyPointsToCode);
+                document.getElementById('clear-points').addEventListener('click', clearPoints);
+            }
+
+            // Check if mobile
+            if (isMobile()) {
+                document.getElementById('mobile-controls').style.display = 'block';
+                setupMobileControls();
+            }
+        }
+
+        // ============================================
+        // AUDIO SETUP
+        // ============================================
+        function setupAudio() {
+            // Walk sound
+            walkSound = new Audio('audio/walk.mp3');
+            walkSound.loop = true;
+            walkSound.volume = 0.5;
+
+            // People ambient sound (always playing)
+            peopleSound = new Audio('audio/people.mp3');
+            peopleSound.loop = true;
+            peopleSound.volume = 0.2;
+
+            // Random ambient sounds (1, 2, 3)
+            ambientSounds = [
+                new Audio('audio/1.mp3'),
+                new Audio('audio/2.mp3'),
+                new Audio('audio/3.mp3')
+            ];
+            ambientSounds.forEach(sound => {
+                sound.volume = 0.15;
+            });
+        }
+
+        function startAmbientSounds() {
+            // Start people background sound
+            peopleSound.play().catch(e => console.log('People sound failed:', e));
+
+            // Play random ambient sound
+            playRandomAmbient();
+        }
+
+        function playRandomAmbient() {
+            const randomIndex = Math.floor(Math.random() * ambientSounds.length);
+            const sound = ambientSounds[randomIndex];
+            sound.currentTime = 0;
+            sound.play().catch(e => console.log('Ambient sound failed:', e));
+
+            // When finished, play another random one
+            sound.onended = () => {
+                // Small delay before next sound
+                setTimeout(playRandomAmbient, 2000 + Math.random() * 5000);
+            };
+        }
+
+        function updateWalkSound(isMoving) {
+            if (isMoving && !isWalking && gameState.isPlaying) {
+                walkSound.play().catch(e => console.log('Audio play failed:', e));
+                isWalking = true;
+            } else if (!isMoving && isWalking) {
+                walkSound.pause();
+                isWalking = false;
+            }
+        }
+
+        // ============================================
+        // LIGHTING SETUP
+        // ============================================
+        function setupLighting() {
+            // Ambient light - warm Italian afternoon
+            const ambientLight = new THREE.AmbientLight(0xfff5e6, 0.6);
+            scene.add(ambientLight);
+
+            // Main sun light
+            const sunLight = new THREE.DirectionalLight(0xfffaf0, 1.2);
+            sunLight.position.set(50, 100, 50);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 500;
+            sunLight.shadow.camera.left = -50;
+            sunLight.shadow.camera.right = 50;
+            sunLight.shadow.camera.top = 50;
+            sunLight.shadow.camera.bottom = -50;
+            sunLight.shadow.bias = -0.0001;
+            scene.add(sunLight);
+
+            // Fill + hemisphere light — dropped by the low tier, each one adds
+            // per-fragment lighting cost on every lit material in the scene.
+            const fillLight = new THREE.DirectionalLight(0xc2d1ff, 0.4);
+            fillLight.position.set(-30, 20, -30);
+
+            const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x8B7355, 0.5);
+
+            fillLightObjects.push(fillLight, hemiLight);
+            if (Q.fillLights) fillLightObjects.forEach(l => scene.add(l));
+
+            // Add subtle fog for atmosphere
+            scene.fog = new THREE.FogExp2(0xd4e5f7, 0.005);
+        }
+
+        // ============================================
+        // CONTROLS SETUP
+        // ============================================
+        function setupControls() {
+            controls = new PointerLockControls(camera, document.body);
+
+            // When pointer lock is activated
+            controls.addEventListener('lock', () => {
+                gameState.isPlaying = true;
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('controls-info').style.display = 'block';
+                document.getElementById('crosshair').style.display = 'block';
+                startAmbientSounds();
+
+                // Play narration
+                new Audio('audio/talk0.mp3').play().catch(() => {});
+
+                // Phase 1: show announce large at center
+                const ann = document.getElementById('mission-announce');
+                ann.style.display = 'block';
+                ann.offsetHeight;
+
+                // Phase 2: after 1.8s shrink and fly to top
+                setTimeout(() => {
+                    ann.style.top = '20px';
+                    ann.style.transform = 'translateX(-50%)';
+                    ann.style.padding = '15px 30px';
+                    ann.querySelector('.announce-text').style.fontSize = '18px';
+
+                    // Phase 3: hide announce, show normal popup
+                    setTimeout(() => {
+                        ann.style.opacity = '0';
+                        setTimeout(() => {
+                            ann.style.display = 'none';
+                            ann.style.cssText = '';
+                            document.getElementById('mission-popup').style.display = 'block';
+                        }, 420);
+                    }, 1050);
+                }, 1800);
+            });
+
+            // When pointer lock is deactivated
+            controls.addEventListener('unlock', () => {
+                gameState.isPlaying = false;
+                document.getElementById('start-screen').style.display = 'flex';
+                document.getElementById('controls-info').style.display = 'none';
+                document.getElementById('crosshair').style.display = 'none';
+            });
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        function setupEventListeners() {
+            // Click to start
+            document.getElementById('start-screen').addEventListener('click', () => {
+                controls.lock();
+            });
+
+            // Keyboard controls
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+
+            // Mouse click to enter restaurant
+            document.addEventListener('mousedown', (e) => {
+                if (e.button === 0 && gameState.canEnterRestaurant) enterRestaurant();
+            });
+
+            // Right-click → log camera position to console
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                const p = camera.position;
+                const r = camera.rotation;
+                const toDeg = v => (v * 180 / Math.PI).toFixed(2);
+                console.log(`📍 Position: x: ${p.x.toFixed(2)}, y: ${p.y.toFixed(2)}, z: ${p.z.toFixed(2)}`);
+                console.log(`🔄 Rotation: x: ${toDeg(r.x)}°, y: ${toDeg(r.y)}°, z: ${toDeg(r.z)}°`);
+            });
+
+            // Static spatial sounds — start on first click
+            document.addEventListener('click', initStaticSpatialSounds, { once: true });
+
+            // Window resize
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function initStaticSpatialSounds() {
+            if (!spatialAudioCtx) {
+                spatialAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            staticSpatialSounds.forEach(s => {
+                const audioEl = new Audio(s.src);
+                audioEl.loop = true;
+                audioEl.crossOrigin = 'anonymous';
+                const src    = spatialAudioCtx.createMediaElementSource(audioEl);
+                const panner = spatialAudioCtx.createPanner();
+                panner.panningModel  = 'HRTF';
+                panner.distanceModel = 'inverse';
+                panner.refDistance   = s.refDistance;
+                panner.maxDistance   = s.maxDistance;
+                panner.rolloffFactor = s.rolloff;
+                panner.positionX.setValueAtTime(s.x, spatialAudioCtx.currentTime);
+                panner.positionY.setValueAtTime(s.y, spatialAudioCtx.currentTime);
+                panner.positionZ.setValueAtTime(s.z, spatialAudioCtx.currentTime);
+                src.connect(panner);
+                panner.connect(spatialAudioCtx.destination);
+                audioEl.play().catch(() => {});
+            });
+        }
+
+        function onKeyDown(event) {
+            switch (event.code) {
+                case 'KeyW':
+                case 'ArrowUp':
+                    moveState.forward = true;
+                    break;
+                case 'KeyS':
+                case 'ArrowDown':
+                    moveState.backward = true;
+                    break;
+                case 'KeyA':
+                case 'ArrowLeft':
+                    moveState.left = true;
+                    break;
+                case 'KeyD':
+                case 'ArrowRight':
+                    moveState.right = true;
+                    break;
+                case 'KeyE':
+                case 'Enter':
+                    if (gameState.canEnterRestaurant) enterRestaurant();
+                    break;
+                case 'KeyP':
+                    // Add boundary point
+                    addBoundaryPoint();
+                    break;
+                case 'KeyC':
+                    // Clear all points
+                    clearPoints();
+                    break;
+            }
+        }
+
+        function onKeyUp(event) {
+            switch (event.code) {
+                case 'KeyW':
+                case 'ArrowUp':
+                    moveState.forward = false;
+                    break;
+                case 'KeyS':
+                case 'ArrowDown':
+                    moveState.backward = false;
+                    break;
+                case 'KeyA':
+                case 'ArrowLeft':
+                    moveState.left = false;
+                    break;
+                case 'KeyD':
+                case 'ArrowRight':
+                    moveState.right = false;
+                    break;
+            }
+        }
+
+        function onWindowResize() {
+            const c = document.getElementById('scene-container');
+            const w = c.clientWidth, h = c.clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        }
+
+        // ============================================
+        // MOBILE CONTROLS
+        // ============================================
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        function setupMobileControls() {
+            const buttons = {
+                'btn-forward': 'forward',
+                'btn-backward': 'backward',
+                'btn-left': 'left',
+                'btn-right': 'right'
+            };
+
+            Object.entries(buttons).forEach(([btnId, dir]) => {
+                const btn = document.getElementById(btnId);
+
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    moveState[dir] = true;
+                });
+
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    moveState[dir] = false;
+                });
+
+                btn.addEventListener('mousedown', () => moveState[dir] = true);
+                btn.addEventListener('mouseup', () => moveState[dir] = false);
+                btn.addEventListener('mouseleave', () => moveState[dir] = false);
+            });
+
+            // Touch to look around
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            renderer.domElement.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }
+            });
+
+            renderer.domElement.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && gameState.isPlaying) {
+                    const deltaX = e.touches[0].clientX - touchStartX;
+                    const deltaY = e.touches[0].clientY - touchStartY;
+
+                    camera.rotation.y -= deltaX * 0.005;
+                    camera.rotation.x -= deltaY * 0.005;
+                    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }
+            });
+        }
+
+        // ============================================
+        // MODEL LOADING - SPZ (Gaussian Splatting)
+        // ============================================
+        async function loadSPZModel() {
+            console.log('Loading SPZ model with Spark...');
+
+            try {
+                // Use SplatLoader for more reliable loading
+                const loader = new SplatLoader();
+
+                const packedSplats = await loader.loadAsync('models/rdy.spz', (event) => {
+                    if (event.type === 'progress' && event.lengthComputable) {
+                        const progress = ((event.loaded / event.total) * 100).toFixed(0);
+                        document.querySelector('.loading-text').textContent =
+                            `טוען את הרחוב האיטלקי... ${progress}%`;
+                        console.log(`Loading SPZ: ${progress}%`);
+                    }
+                });
+
+                console.log('SPZ data loaded, creating mesh...');
+
+                // Create SplatMesh from loaded data
+                splatMesh = new SplatMesh({ packedSplats });
+
+                // Position, rotation, and scale the splat scene
+                splatMesh.position.set(0, 0, 0);
+                splatMesh.rotation.z = Math.PI; // 180 degrees on Z axis
+                splatMesh.scale.set(1, 1, 1);
+
+                scene.add(splatMesh);
+
+                console.log('SPZ model loaded successfully!');
+                gameState.splatReady = true;
+                onModelLoaded();
+
+            } catch (error) {
+                console.error('Error loading SPZ:', error);
+                // Fallback to GLB
+                console.log('Falling back to GLB model...');
+                loadGLBModel();
+            }
+        }
+
+        // ============================================
+        // MODEL LOADING - GLB (Fallback)
+        // ============================================
+        function loadGLBModel() {
+            const loader = new GLTFLoader();
+
+            loader.load(
+                'models/street.glb',
+                (gltf) => {
+                    streetModel = gltf.scene;
+
+                    // Setup shadows for all meshes
+                    streetModel.traverse((node) => {
+                        if (node.isMesh) {
+                            node.castShadow = true;
+                            node.receiveShadow = true;
+                        }
+                    });
+
+                    scene.add(streetModel);
+
+                    console.log('GLB model loaded successfully!');
+                    onModelLoaded();
+                },
+                (xhr) => {
+                    if (xhr.total > 0) {
+                        const progress = (xhr.loaded / xhr.total * 100).toFixed(0);
+                        document.querySelector('.loading-text').textContent =
+                            `טוען את הרחוב האיטלקי... ${progress}%`;
+                    }
+                },
+                (error) => {
+                    console.error('Error loading GLB model:', error);
+                    // Create fallback environment
+                    createFallbackEnvironment();
+                    onModelLoaded();
+                }
+            );
+        }
+
+        function loadMenuGlb() {
+            const loader = new GLTFLoader();
+            const deg = Math.PI / 180;
+            loader.load(
+                'models/menu.glb',
+                (gltf) => {
+                    const mesh = gltf.scene;
+                    mesh.position.set(4.87, -0.2, -18);
+                    mesh.rotation.set(-176.98 * deg, 28.98 * deg, 178.53 * deg);
+                    mesh.scale.set(0.4, 0.4, 0.4);
+                    mesh.traverse((node) => {
+                        if (node.isMesh) {
+                            node.castShadow = true;
+                            node.receiveShadow = true;
+                        }
+                    });
+                    scene.add(mesh);
+                },
+                null,
+                (err) => console.error('menu.glb load error:', err)
+            );
+        }
+
+        function onModelLoaded() {
+            if (gameState.isLoaded) return; // Prevent double call
+
+            gameState.isLoaded = true;
+
+            document.getElementById('loading-screen').style.display = 'none';
+
+            // Play start video, then show start screen
+            const startOverlay = document.getElementById('start-video-overlay');
+            const startVid     = document.getElementById('start-video');
+            startOverlay.style.display = 'flex';
+            startVid.play().catch(() => {});
+            function showStartScreen() {
+                startOverlay.style.display = 'none';
+                document.getElementById('start-screen').style.display = 'flex';
+            }
+            startVid.onended = showStartScreen;
+            startVid.onerror = showStartScreen;
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === '0') { startVid.pause(); startVid.dispatchEvent(new Event('ended')); }
+            }, { once: true });
+
+
+            // If mobile, auto-start without pointer lock
+            if (isMobile()) {
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('controls-info').style.display = 'block';
+                document.getElementById('mission-popup').style.display = 'block';
+                gameState.isPlaying = true;
+            }
+        }
+
+        // ============================================
+        // WALKING PERSON LOADING
+        // ============================================
+        function loadWalkingPerson() {
+            const loader = new GLTFLoader();
+
+            loader.load(
+                'models/man.glb',
+                (gltf) => {
+                    walkingMan = gltf.scene;
+
+                    // Position the person at the start of the path
+                    walkingMan.position.copy(walkingManPath.start);
+                    walkingMan.scale.set(0.3, 0.3, 0.3); // Make even smaller
+
+                    // Setup shadows
+                    walkingMan.traverse((node) => {
+                        if (node.isMesh) {
+                            node.castShadow = true;
+                            node.receiveShadow = true;
+                        }
+                    });
+
+                    scene.add(walkingMan);
+
+                    // Setup animation mixer
+                    if (gltf.animations && gltf.animations.length > 0) {
+                        walkingManMixer = new THREE.AnimationMixer(walkingMan);
+
+                        const clip = gltf.animations[0];
+                        console.log('Original animation duration:', clip.duration);
+                        console.log('Original tracks:', clip.tracks.length);
+
+                        // Remove position tracks and trim to avoid T-Pose
+                        const trimmedTracks = [];
+                        const startTrim = 0.02; // Skip first 2%
+                        const endTrim = 0.98;   // Stop at 98%
+
+                        clip.tracks.forEach(track => {
+                            // Skip position tracks
+                            if (track.name.includes('.position')) {
+                                console.log('Removing position track:', track.name);
+                                return;
+                            }
+
+                            // Trim keyframes to avoid T-Pose frames
+                            const times = track.times;
+                            const values = track.values;
+                            const duration = clip.duration;
+
+                            const startIndex = times.findIndex(t => t >= duration * startTrim);
+                            const endIndex = times.findIndex(t => t >= duration * endTrim);
+
+                            if (startIndex > 0 && endIndex > startIndex) {
+                                const newTimes = times.slice(startIndex, endIndex).map(t => t - times[startIndex]);
+                                const valuesPerKey = values.length / times.length;
+                                const newValues = values.slice(
+                                    startIndex * valuesPerKey,
+                                    endIndex * valuesPerKey
+                                );
+
+                                const newTrack = track.clone();
+                                newTrack.times = new Float32Array(newTimes);
+                                newTrack.values = new Float32Array(newValues);
+                                trimmedTracks.push(newTrack);
+                            } else {
+                                trimmedTracks.push(track);
+                            }
+                        });
+
+                        // Create new clip with trimmed tracks
+                        const newDuration = clip.duration * (endTrim - startTrim);
+                        const cleanedClip = new THREE.AnimationClip(clip.name + '_cleaned', newDuration, trimmedTracks);
+
+                        const walkAction = walkingManMixer.clipAction(cleanedClip);
+                        walkAction.timeScale = 1.0; // Normal animation speed to match faster movement
+                        walkAction.setLoop(THREE.LoopRepeat);
+                        walkAction.clampWhenFinished = false;
+                        walkAction.play();
+                        console.log('Walking animation started - trimmed and cleaned');
+                    }
+
+                    console.log('Walking person loaded successfully!');
+                },
+                (xhr) => {
+                    if (xhr.total > 0) {
+                        const progress = (xhr.loaded / xhr.total * 100).toFixed(0);
+                        console.log(`Loading walking person: ${progress}%`);
+                    }
+                },
+                (error) => {
+                    console.error('Error loading walking person:', error);
+                }
+            );
+        }
+
+        function updateWalkingPerson(delta) {
+            if (!walkingMan) return;
+
+            // Update path progress - only forward
+            walkingManPath.progress += delta * walkingManPath.speed;
+
+            // Check if reached end of path - restart from beginning
+            if (walkingManPath.progress >= 1) {
+                walkingManPath.progress = 0; // Reset to start
+            }
+
+            // Interpolate position between start and end
+            walkingMan.position.lerpVectors(
+                walkingManPath.start,
+                walkingManPath.end,
+                walkingManPath.progress
+            );
+
+            // Make the person face the direction they're walking (always forward)
+            const direction = new THREE.Vector3();
+            direction.subVectors(walkingManPath.end, walkingManPath.start);
+
+            const angle = Math.atan2(direction.x, direction.z);
+            walkingMan.rotation.y = angle;
+        }
+
+        // ============================================
+        // WANDERING CHARACTERS LOADING
+        // ============================================
+        function getRandomPointInArea() {
+            return new THREE.Vector3(
+                walkableArea.minX + Math.random() * (walkableArea.maxX - walkableArea.minX),
+                -0.8,
+                walkableArea.minZ + Math.random() * (walkableArea.maxZ - walkableArea.minZ)
+            );
+        }
+
+        function loadWanderingCharacters() {
+            const loader = new GLTFLoader();
+
+            characterModels.forEach((modelInfo, index) => {
+                loader.load(
+                    modelInfo.file,
+                    (gltf) => {
+                        // Check if this is a multi-segment path or simple path
+                        let pathSegments = [];
+                        if (modelInfo.path.segments) {
+                            // Multi-segment path
+                            pathSegments = modelInfo.path.segments.map(seg => ({
+                                start: new THREE.Vector3(seg.start.x, seg.start.y, seg.start.z),
+                                end: new THREE.Vector3(seg.end.x, seg.end.y, seg.end.z)
+                            }));
+                        } else {
+                            // Simple path - convert to single segment
+                            pathSegments = [{
+                                start: new THREE.Vector3(modelInfo.path.start.x, modelInfo.path.start.y, modelInfo.path.start.z),
+                                end: new THREE.Vector3(modelInfo.path.end.x, modelInfo.path.end.y, modelInfo.path.end.z)
+                            }];
+                        }
+
+                        const character = {
+                            mesh: gltf.scene,
+                            mixer: null,
+                            speed: modelInfo.speed,
+                            progress: 0, // Progress within current segment
+                            currentSegment: 0, // Which segment we're on
+                            pathSegments: pathSegments,
+                            scale: modelInfo.scale,
+                            baseRotation: new THREE.Vector3(
+                                modelInfo.rotation.x * Math.PI / 180,
+                                modelInfo.rotation.y * Math.PI / 180,
+                                modelInfo.rotation.z * Math.PI / 180
+                            )
+                        };
+
+                        // Position at start of first segment
+                        character.mesh.position.copy(pathSegments[0].start);
+                        character.mesh.scale.set(modelInfo.scale, modelInfo.scale, modelInfo.scale);
+
+                        // Calculate initial rotation based on first segment direction
+                        const initialDir = new THREE.Vector3();
+                        initialDir.subVectors(pathSegments[0].end, pathSegments[0].start);
+                        if (initialDir.length() > 0.01) {
+                            const angle = Math.atan2(initialDir.x, initialDir.z);
+                            character.mesh.rotation.set(
+                                character.baseRotation.x,
+                                angle + character.baseRotation.y,
+                                character.baseRotation.z
+                            );
+                        } else {
+                            character.mesh.rotation.set(
+                                character.baseRotation.x,
+                                character.baseRotation.y,
+                                character.baseRotation.z
+                            );
+                        }
+
+                        // Setup shadows
+                        character.mesh.traverse((node) => {
+                            if (node.isMesh) {
+                                node.castShadow = true;
+                                node.receiveShadow = true;
+                            }
+                        });
+
+                        scene.add(character.mesh);
+
+                        // Spatial audio for this character
+                        if (modelInfo.audio) {
+                            const setupSpatialAudio = () => {
+                                if (!spatialAudioCtx) {
+                                    spatialAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                                }
+                                const audioEl = new Audio(modelInfo.audio);
+                                audioEl.loop = true;
+                                audioEl.crossOrigin = 'anonymous';
+                                const src = spatialAudioCtx.createMediaElementSource(audioEl);
+                                const gain = spatialAudioCtx.createGain();
+                                gain.gain.value = modelInfo.volume !== undefined ? modelInfo.volume : 1;
+                                const panner = spatialAudioCtx.createPanner();
+                                panner.panningModel = 'HRTF';
+                                panner.distanceModel = 'inverse';
+                                panner.refDistance = 2;
+                                panner.maxDistance = 30;
+                                panner.rolloffFactor = 2;
+                                src.connect(gain);
+                                gain.connect(panner);
+                                panner.connect(spatialAudioCtx.destination);
+                                character.audioPanner = panner;
+                                audioEl.play().catch(() => {});
+                            };
+                            document.addEventListener('click', setupSpatialAudio, { once: true });
+                        }
+
+                        // Setup animation
+                        if (gltf.animations && gltf.animations.length > 0) {
+                            character.mixer = new THREE.AnimationMixer(character.mesh);
+
+                            const clip = gltf.animations[0];
+                            const tracks = clip.tracks.filter(track => !track.name.includes('.position'));
+
+                            const trimmedTracks = [];
+                            const startTrim = 0.02;
+                            const endTrim = 0.98;
+
+                            tracks.forEach(track => {
+                                const times = track.times;
+                                const values = track.values;
+                                const duration = clip.duration;
+
+                                const startIndex = times.findIndex(t => t >= duration * startTrim);
+                                const endIndex = times.findIndex(t => t >= duration * endTrim);
+
+                                if (startIndex > 0 && endIndex > startIndex) {
+                                    const newTimes = times.slice(startIndex, endIndex).map(t => t - times[startIndex]);
+                                    const valuesPerKey = values.length / times.length;
+                                    const newValues = values.slice(
+                                        startIndex * valuesPerKey,
+                                        endIndex * valuesPerKey
+                                    );
+
+                                    const newTrack = track.clone();
+                                    newTrack.times = new Float32Array(newTimes);
+                                    newTrack.values = new Float32Array(newValues);
+                                    trimmedTracks.push(newTrack);
+                                } else {
+                                    trimmedTracks.push(track);
+                                }
+                            });
+
+                            const newDuration = clip.duration * (endTrim - startTrim);
+                            const cleanedClip = new THREE.AnimationClip(clip.name + '_cleaned', newDuration, trimmedTracks);
+
+                            const action = character.mixer.clipAction(cleanedClip);
+                            action.timeScale = 1.0;
+                            action.setLoop(THREE.LoopRepeat);
+                            action.clampWhenFinished = false;
+                            action.play();
+                        }
+
+                        characters.push(character);
+                        console.log(`Character loaded: ${modelInfo.file}`);
+                    },
+                    (xhr) => {
+                        if (xhr.total > 0) {
+                            const progress = (xhr.loaded / xhr.total * 100).toFixed(0);
+                            console.log(`Loading ${modelInfo.file}: ${progress}%`);
+                        }
+                    },
+                    (error) => {
+                        console.error(`Error loading ${modelInfo.file}:`, error);
+                    }
+                );
+            });
+        }
+
+        function updateWanderingCharacters(delta) {
+            characters.forEach(character => {
+                if (!character.mesh) return;
+
+                // Update animation
+                if (character.mixer) {
+                    character.mixer.update(delta);
+                }
+
+                // Update movement along character's custom path
+                if (character.speed > 0) {
+                    character.progress += delta * character.speed;
+
+                    // Check if we've completed current segment
+                    if (character.progress >= 1) {
+                        character.progress = 0;
+                        character.currentSegment++;
+
+                        // Loop back to first segment if we've completed all
+                        if (character.currentSegment >= character.pathSegments.length) {
+                            character.currentSegment = 0;
+                        }
+                    }
+
+                    // Get current segment
+                    const segment = character.pathSegments[character.currentSegment];
+
+                    // Move along the current segment
+                    character.mesh.position.lerpVectors(
+                        segment.start,
+                        segment.end,
+                        character.progress
+                    );
+
+                    // Face movement direction with smooth rotation
+                    const direction = new THREE.Vector3();
+                    direction.subVectors(segment.end, segment.start);
+                    if (direction.length() > 0.01) {
+                        const targetAngle = Math.atan2(direction.x, direction.z);
+                        // Apply path direction + base rotation
+                        character.mesh.rotation.set(
+                            character.baseRotation.x,
+                            targetAngle + character.baseRotation.y,
+                            character.baseRotation.z
+                        );
+                    }
+                } else {
+                    // Static character - keep base rotation only
+                    character.mesh.rotation.set(
+                        character.baseRotation.x,
+                        character.baseRotation.y,
+                        character.baseRotation.z
+                    );
+                }
+
+                // Update spatial audio position
+                if (character.audioPanner && spatialAudioCtx) {
+                    const p = character.mesh.position;
+                    const t = spatialAudioCtx.currentTime;
+                    character.audioPanner.positionX.setValueAtTime(p.x, t);
+                    character.audioPanner.positionY.setValueAtTime(p.y, t);
+                    character.audioPanner.positionZ.setValueAtTime(p.z, t);
+                }
+            });
+        }
+
+        // ============================================
+        // IMAGE PLANE LOADING
+        // ============================================
+        const imagePlanes = [
+            {
+                file: 'images/joseph.png',
+                position: { x: 5.28, y: 1.3, z: -17.01 },
+                rotation: { x: 0, y: 260, z: 0 },
+                scale: 0.4,
+                height: 2
+            },
+            {
+                file: 'images/flyer.png',
+                position: { x: -0.56, y: 1.8, z: -5.95 },
+                rotation: { x: -180, y: 120.47, z: -180 },
+                scale: 1.0,
+                height: 2
+            }
+        ];
+
+        function loadImagePlane() {
+            const textureLoader = new THREE.TextureLoader();
+
+            imagePlanes.forEach((planeInfo) => {
+                textureLoader.load(
+                    planeInfo.file,
+                    (texture) => {
+                        // Get image aspect ratio
+                        const aspect = texture.image.width / texture.image.height;
+                        const planeHeight = planeInfo.height;
+                        const planeWidth = planeHeight * aspect;
+
+                        // Create plane geometry
+                        const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+
+                        // Create material with the texture
+                        const material = new THREE.MeshBasicMaterial({
+                            map: texture,
+                            transparent: true,
+                            alphaTest: 0.5,  // Filter out semi-transparent pixels
+                            side: THREE.DoubleSide,
+                            depthWrite: true
+                        });
+
+                        // Create mesh
+                        const imagePlane = new THREE.Mesh(geometry, material);
+
+                        // Position the plane
+                        imagePlane.position.set(
+                            planeInfo.position.x,
+                            planeInfo.position.y,
+                            planeInfo.position.z
+                        );
+
+                        // Apply rotation (convert degrees to radians)
+                        imagePlane.rotation.set(
+                            planeInfo.rotation.x * Math.PI / 180,
+                            planeInfo.rotation.y * Math.PI / 180,
+                            planeInfo.rotation.z * Math.PI / 180
+                        );
+
+                        // Apply scale
+                        const scale = planeInfo.scale || 1.0;
+                        imagePlane.scale.set(scale, scale, scale);
+
+                        scene.add(imagePlane);
+                        console.log(`Image plane loaded: ${planeInfo.file}`);
+                    },
+                    (xhr) => {
+                        if (xhr.total > 0) {
+                            const progress = (xhr.loaded / xhr.total * 100).toFixed(0);
+                            console.log(`Loading image ${planeInfo.file}: ${progress}%`);
+                        }
+                    },
+                    (error) => {
+                        console.error(`Error loading image ${planeInfo.file}:`, error);
+                    }
+                );
+            });
+        }
+
+        // ============================================
+        // FALLBACK ENVIRONMENT
+        // ============================================
+        function createFallbackEnvironment() {
+            console.log('Creating fallback environment...');
+
+            // Ground - cobblestone style
+            const groundGeometry = new THREE.PlaneGeometry(100, 100);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x8B7355 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Create some simple buildings
+            const buildingColors = [0xD4A574, 0xE8D4B8, 0xF5E6D3, 0xC9B896];
+
+            for (let i = -3; i <= 3; i++) {
+                // Left side buildings
+                createSimpleBuilding(-8, i * 10, buildingColors[Math.abs(i) % buildingColors.length]);
+                // Right side buildings
+                createSimpleBuilding(8, i * 10, buildingColors[(Math.abs(i) + 2) % buildingColors.length]);
+            }
+
+            // Restaurant building (special)
+            const restaurantGeometry = new THREE.BoxGeometry(10, 8, 8);
+            const restaurantMaterial = new THREE.MeshLambertMaterial({ color: 0xD4A574 });
+            const restaurant = new THREE.Mesh(restaurantGeometry, restaurantMaterial);
+            restaurant.position.set(0, 4, -15);
+            restaurant.castShadow = true;
+            scene.add(restaurant);
+
+            // Restaurant door
+            const doorGeometry = new THREE.BoxGeometry(2, 4, 0.5);
+            const doorMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const door = new THREE.Mesh(doorGeometry, doorMaterial);
+            door.position.set(0, 2, -10.5);
+            scene.add(door);
+
+            // Restaurant sign
+            const signGeometry = new THREE.BoxGeometry(6, 1.5, 0.3);
+            const signMaterial = new THREE.MeshLambertMaterial({ color: 0x8B0000 });
+            const sign = new THREE.Mesh(signGeometry, signMaterial);
+            sign.position.set(0, 6.5, -10.5);
+            scene.add(sign);
+
+            // Update entrance position for fallback
+            CONFIG.RESTAURANT_ENTRANCE.set(0, CONFIG.PLAYER_HEIGHT, -8);
+        }
+
+        function createSimpleBuilding(x, z, color) {
+            const height = 6 + Math.random() * 4;
+            const geometry = new THREE.BoxGeometry(6, height, 6);
+            const material = new THREE.MeshLambertMaterial({ color: color });
+            const building = new THREE.Mesh(geometry, material);
+            building.position.set(x, height / 2, z);
+            building.castShadow = true;
+            building.receiveShadow = true;
+            scene.add(building);
+
+            // Windows
+            const windowGeometry = new THREE.BoxGeometry(0.8, 1.2, 0.1);
+            const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x87CEEB });
+
+            for (let floor = 1; floor < height / 2; floor++) {
+                for (let w = -1; w <= 1; w++) {
+                    const window1 = new THREE.Mesh(windowGeometry, windowMaterial);
+                    window1.position.set(x, floor * 2 + 1, z + 3.05);
+                    window1.position.x += w * 1.5;
+                    scene.add(window1);
+                }
+            }
+        }
+
+        // ============================================
+        // COLLISION DETECTION
+        // ============================================
+        function checkWallCollision(newX, newZ) {
+            const playerRadius = CONFIG.PLAYER_RADIUS;
+
+            for (const wall of STREET_WALLS) {
+                const dist = pointToLineDistance(newX, newZ, wall.x1, wall.z1, wall.x2, wall.z2);
+                if (dist < playerRadius) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function pointToLineDistance(px, pz, x1, z1, x2, z2) {
+            const A = px - x1;
+            const B = pz - z1;
+            const C = x2 - x1;
+            const D = z2 - z1;
+
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+
+            if (lenSq !== 0) {
+                param = dot / lenSq;
+            }
+
+            let xx, zz;
+
+            if (param < 0) {
+                xx = x1;
+                zz = z1;
+            } else if (param > 1) {
+                xx = x2;
+                zz = z2;
+            } else {
+                xx = x1 + param * C;
+                zz = z1 + param * D;
+            }
+
+            const dx = px - xx;
+            const dz = pz - zz;
+            return Math.sqrt(dx * dx + dz * dz);
+        }
+
+        // ============================================
+        // RESTAURANT ENTRANCE
+        // ============================================
+        function checkRestaurantEntrance() {
+            const distance = camera.position.distanceTo(CONFIG.RESTAURANT_ENTRANCE);
+
+            if (distance < CONFIG.ENTRANCE_RADIUS) {
+                if (!gameState.canEnterRestaurant) {
+                    gameState.canEnterRestaurant = true;
+                    document.getElementById('interaction-prompt').style.display = 'block';
+                }
+            } else {
+                if (gameState.canEnterRestaurant) {
+                    gameState.canEnterRestaurant = false;
+                    document.getElementById('interaction-prompt').style.display = 'none';
+                }
+            }
+        }
+
+        function enterRestaurant() {
+            console.log('Entering restaurant...');
+            // Transition to restaurant interior
+            window.location.href = 'rest.html';
+        }
+
+        // ============================================
+        // HEIGHT ZONE CALCULATION
+        // ============================================
+        function isPointInPolygon(x, z, vertices) {
+            // Ray casting algorithm for point-in-polygon test
+            let inside = false;
+            for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+                const xi = vertices[i].x, zi = vertices[i].z;
+                const xj = vertices[j].x, zj = vertices[j].z;
+
+                const intersect = ((zi > z) !== (zj > z)) &&
+                    (x < (xj - xi) * (z - zi) / (zj - zi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function getZoneHeight(x, z) {
+            // Check each height zone
+            for (const zone of HEIGHT_ZONES) {
+                if (isPointInPolygon(x, z, zone.vertices)) {
+                    return zone.height;
+                }
+            }
+
+            // Not in any zone, return default height
+            return 0;
+        }
+
+        // ============================================
+        // UPDATE & ANIMATION
+        // ============================================
+        function updateMovement(delta) {
+            if (!gameState.isPlaying) return;
+
+            // Calculate movement direction
+            direction.z = Number(moveState.forward) - Number(moveState.backward);
+            direction.x = Number(moveState.right) - Number(moveState.left);
+            direction.normalize();
+
+            // Apply movement
+            if (moveState.forward || moveState.backward) {
+                velocity.z = direction.z * CONFIG.PLAYER_SPEED * delta;
+            } else {
+                velocity.z = 0;
+            }
+
+            if (moveState.left || moveState.right) {
+                velocity.x = direction.x * CONFIG.PLAYER_SPEED * delta;
+            } else {
+                velocity.x = 0;
+            }
+
+            // Save position before moving
+            const oldX = camera.position.x;
+            const oldZ = camera.position.z;
+
+            // Move the player
+            controls.moveRight(velocity.x);
+            controls.moveForward(velocity.z);
+
+            // Check collision and revert if needed
+            if (checkWallCollision(camera.position.x, camera.position.z)) {
+                camera.position.x = oldX;
+                camera.position.z = oldZ;
+            }
+
+            // Check if moving
+            const isMoving = moveState.forward || moveState.backward || moveState.left || moveState.right;
+
+            // Head bobbing effect - realistic walking motion
+            if (isMoving && gameState.isPlaying) {
+                bobTime += delta * CONFIG.BOB_FREQUENCY;
+                currentBobAmount = Math.min(currentBobAmount + delta * 3, 1); // Smooth start
+            } else {
+                currentBobAmount = Math.max(currentBobAmount - delta * 3, 0); // Smooth stop
+            }
+
+            // Apply head bob
+            const bobMultiplier = currentBobAmount;
+            const verticalBob = Math.sin(bobTime * 2) * CONFIG.BOB_VERTICAL_AMOUNT * bobMultiplier;
+
+            // Calculate base height (considering height zones)
+            const baseHeight = getZoneHeight(camera.position.x, camera.position.z);
+
+            // Apply to camera - base height + vertical bobbing, no rotation changes
+            camera.position.y = baseHeight + verticalBob;
+
+            // Update walk sound
+            updateWalkSound(isMoving);
+
+            // Update debug display
+            if (CONFIG.DEBUG_MODE) {
+                document.getElementById('pos-x').textContent = camera.position.x.toFixed(2);
+                document.getElementById('pos-y').textContent = camera.position.y.toFixed(2);
+                document.getElementById('pos-z').textContent = camera.position.z.toFixed(2);
+                // Rotation in degrees
+                const radToDeg = 180 / Math.PI;
+                document.getElementById('rot-x').textContent = (camera.rotation.x * radToDeg).toFixed(2);
+                document.getElementById('rot-y').textContent = (camera.rotation.y * radToDeg).toFixed(2);
+                document.getElementById('rot-z').textContent = (camera.rotation.z * radToDeg).toFixed(2);
+            }
+
+            // Check if near restaurant entrance
+            checkRestaurantEntrance();
+        }
+
+        let _nextFrameTime = 0;
+        function animate(now = 0) {
+            requestAnimationFrame(animate);
+
+            if (Q.maxFps) {
+                if (now < _nextFrameTime) return;
+                _nextFrameTime = now + 1000 / Q.maxFps;
+            }
+
+            const delta = clock.getDelta();
+            sampleFrame(delta);
+
+            updateMovement(delta);
+
+            // Update walking person animation
+            if (walkingManMixer) {
+                walkingManMixer.update(delta);
+            }
+
+            // Update walking person position along path
+            updateWalkingPerson(delta);
+
+            // Update wandering characters
+            updateWanderingCharacters(delta);
+
+            // Update spatial audio listener to match camera
+            if (spatialAudioCtx) {
+                const lp = camera.position;
+                const t  = spatialAudioCtx.currentTime;
+                spatialAudioCtx.listener.positionX.setValueAtTime(lp.x, t);
+                spatialAudioCtx.listener.positionY.setValueAtTime(lp.y, t);
+                spatialAudioCtx.listener.positionZ.setValueAtTime(lp.z, t);
+                const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                const up  = new THREE.Vector3(0, 1,  0).applyQuaternion(camera.quaternion);
+                spatialAudioCtx.listener.forwardX.setValueAtTime(fwd.x, t);
+                spatialAudioCtx.listener.forwardY.setValueAtTime(fwd.y, t);
+                spatialAudioCtx.listener.forwardZ.setValueAtTime(fwd.z, t);
+                spatialAudioCtx.listener.upX.setValueAtTime(up.x, t);
+                spatialAudioCtx.listener.upY.setValueAtTime(up.y, t);
+                spatialAudioCtx.listener.upZ.setValueAtTime(up.z, t);
+            }
+
+            // Note: SplatMesh updates automatically, no manual update needed
+            // The splat mesh renders itself when renderer.render is called
+
+            renderer.render(scene, camera);
+        }
+
+        // ============================================
+        // START
+        // ============================================
+        init();
+    </script>
+</body>
+</html>

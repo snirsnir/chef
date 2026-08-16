@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מסע בזמן - מסופר מאריו ועד היום</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap');
+        
+        :root {
+            --primary-color: #6750A4;
+            --secondary-color: #9C8ADB;
+            --accent-color: #E8DEF8;
+            --dark-color: #1D192B;
+            --light-color: #F6F2FF;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --danger-color: #F44336;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Animation Container */
+        .animation-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .time-tunnel {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #1a237e, #673ab7, #4a148c);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+        
+        .tunnel-circle {
+            position: absolute;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            animation: tunnel 10s infinite linear;
+        }
+        
+        .tunnel-circle:nth-child(1) {
+            width: 50px;
+            height: 50px;
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .tunnel-circle:nth-child(2) {
+            width: 100px;
+            height: 100px;
+            animation-delay: -1s;
+        }
+        
+        .tunnel-circle:nth-child(3) {
+            width: 150px;
+            height: 150px;
+            animation-delay: -2s;
+        }
+        
+        .tunnel-circle:nth-child(4) {
+            width: 200px;
+            height: 200px;
+            animation-delay: -3s;
+        }
+        
+        .tunnel-circle:nth-child(5) {
+            width: 250px;
+            height: 250px;
+            animation-delay: -4s;
+        }
+        
+        .tunnel-circle:nth-child(6) {
+            width: 300px;
+            height: 300px;
+            animation-delay: -5s;
+        }
+        
+        .tunnel-circle:nth-child(7) {
+            width: 350px;
+            height: 350px;
+            animation-delay: -6s;
+        }
+        
+        .game-icon {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            animation: floating 5s infinite ease-in-out;
+        }
+        
+        .mario {
+            top: 20%;
+            left: 10%;
+            animation-delay: -1s;
+            filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.7));
+        }
+        
+        .pacman {
+            top: 60%;
+            left: 25%;
+            animation-delay: -2s;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 0, 0.7));
+        }
+        
+        .tetris {
+            top: 30%;
+            right: 20%;
+            animation-delay: -3s;
+            filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.7));
+        }
+        
+        .minecraft {
+            top: 70%;
+            right: 10%;
+            animation-delay: -4s;
+            filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.7));
+        }
+        
+        @keyframes tunnel {
+            0% {
+                transform: translateZ(-1000px) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateZ(500px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes floating {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(10deg);
+            }
+        }
+        
+        /* Main Content */
+        .card {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.8rem;
+        }
+        
+        .intro {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: var(--dark-color);
+        }
+        
+        /* Form Styles */
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+        
+        input[type="text"], 
+        textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--accent-color);
+            border-radius: 8px;
+            font-family: 'Rubik', sans-serif;
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background-color: var(--light-color);
+        }
+        
+        input[type="text"]:focus, 
+        textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(103, 80, 164, 0.3);
+            outline: none;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .rating-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        
+        .rating-option {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .rating-option input[type="radio"] {
+            display: none;
+        }
+        
+        .rating-option label {
+            display: block;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin: 0 5px;
+            background-color: var(--accent-color);
+        }
+        
+        .rating-option input[type="radio"]:checked + label {
+            background-color: var(--primary-color);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .multiple-choice {
+            margin-top: 15px;
+        }
+        
+        .choice-option {
+            display: block;
+            margin-bottom: 10px;
+            padding: 10px 15px;
+            border: 2px solid var(--accent-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .choice-option:hover {
+            background-color: var(--accent-color);
+        }
+        
+        .choice-option input[type="radio"] {
+            margin-left: 10px;
+        }
+        
+        .binary-choice {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .binary-option {
+            flex: 0 0 40%;
+        }
+        
+        .binary-option input[type="radio"] {
+            display: none;
+        }
+        
+        .binary-option label {
+            display: block;
+            text-align: center;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background-color: var(--accent-color);
+        }
+        
+        .binary-option input[type="radio"]:checked + label {
+            background-color: var(--primary-color);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .submit-btn {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 40px auto 0;
+            padding: 15px;
+            border: none;
+            border-radius: 30px;
+            background-color: var(--primary-color);
+            color: white;
+            font-family: 'Rubik', sans-serif;
+            font-size: 18px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(103, 80, 164, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .submit-btn:hover {
+            background-color: #5a46a1;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(103, 80, 164, 0.4);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(103, 80, 164, 0.3);
+        }
+        
+        .submit-btn:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(100, 100);
+                opacity: 0;
+            }
+        }
+        
+        .submit-btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 50px;
+            color: var(--dark-color);
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .animation-container {
+                height: 200px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
+            
+            .rating-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .rating-option {
+                margin-bottom: 5px;
+            }
+            
+            .binary-choice {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .binary-option {
+                flex: 0 0 100%;
+            }
+        }
+        
+        /* Loader animation */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loader {
+            border: 5px solid var(--accent-color);
+            border-radius: 50%;
+            border-top: 5px solid var(--primary-color);
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Success message */
+        .success-message {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--success-color);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loader -->
+    <div class="loader-overlay" id="loader" style="display: none;">
+        <div class="loader"></div>
+    </div>
+    
+    <!-- Success Message -->
+    <div class="success-message" id="successMessage">
+        <h3>תודה על המשוב!</h3>
+        <p>התשובות נשלחו בהצלחה.</p>
+    </div>
+    
+    <div class="container">
+        <!-- Time Travel Animation -->
+        <div class="animation-container">
+            <div class="time-tunnel">
+                <div class="tunnel-circle"></div>
+                <div class="tunnel-circle"></div>
+                <div class="tunnel-circle"></div>
+                <div class="tunnel-circle"></div>
+                <div class="tunnel-circle"></div>
+                <div class="tunnel-circle"></div>
+                <div class="tunnel-circle"></div>
+                
+                <img src="https://cdn-icons-png.flaticon.com/128/718/718704.png" alt="Mario" class="game-icon mario">
+                <img src="https://cdn-icons-png.flaticon.com/128/706/706022.png" alt="Pacman" class="game-icon pacman">
+                <img src="https://cdn-icons-png.flaticon.com/128/566/566138.png" alt="Tetris" class="game-icon tetris">
+                <img src="https://cdn-icons-png.flaticon.com/128/1089/1089973.png" alt="Minecraft" class="game-icon minecraft">
+            </div>
+        </div>
+        
+        <div class="card">
+            <h1>מסופר מאריו ועד היום</h1>
+            <p class="intro">משתתפים יקרים, אנו מקווים שנהנתם בפעילות, נשמח אם תכתבו לנו משוב קצר.</p>
+            
+            <div class="form-container">
+                <form id="feedbackForm">
+                    <div class="form-group">
+                        <label for="name">שם:</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>נהנתם מהפעילות? דרגו מ-1 עד 5:</label>
+                        <div class="rating-group">
+                            <div class="rating-option">
+                                <input type="radio" id="enjoyment1" name="enjoyment" value="1" required>
+                                <label for="enjoyment1">1</label>
+                            </div>
+                            <div class="rating-option">
+                                <input type="radio" id="enjoyment2" name="enjoyment" value="2">
+                                <label for="enjoyment2">2</label>
+                            </div>
+                            <div class="rating-option">
+                                <input type="radio" id="enjoyment3" name="enjoyment" value="3">
+                                <label for="enjoyment3">3</label>
+                            </div>
+                            <div class="rating-option">
+                                <input type="radio" id="enjoyment4" name="enjoyment" value="4">
+                                <label for="enjoyment4">4</label>
+                            </div>
+                            <div class="rating-option">
+                                <input type="radio" id="enjoyment5" name="enjoyment" value="5">
+                                <label for="enjoyment5">5</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>האם למדתם מהפעילות? דרגו מ-1 עד 5:</label>
+                        <div class="rating-group">
+                            <div class="rating-option">
+                                <input type="radio" id="learning1" name="learning" value="1" required>
+                                <label for="learning1">1</label>
+                            </div>
+                            <div class="rating-option">
+                                <input type="radio" id="learning2" name="learning" value="2">
+                                <label for="learning2">2</label>
+                            </div>
+                            <div class="rating-option">
+                                <input type="radio" id="learning3" name="learning" value="3">
+                                <label for="learning3">3</label>
+                            </div>
+                            <div class="rating-option">
+                                <input type="radio" id="learning4" name="learning" value="4">
+                                <label for="learning4">4</label>
+                            </div>
+                            <div class="rating-option">
+                                <input type="radio" id="learning5" name="learning" value="5">
+                                <label for="learning5">5</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>מה תפקידו של כרטיס המסך?</label>
+                        <div class="multiple-choice">
+                            <label class="choice-option">
+                                <input type="radio" name="graphicsCard" value="לאחסן את כל הנתונים במחשב" required>
+                                לאחסן את כל הנתונים במחשב
+                            </label>
+                            <label class="choice-option">
+                                <input type="radio" name="graphicsCard" value="לעבד את הגרפיקה ולהציג תמונות על המסך">
+                                לעבד את הגרפיקה ולהציג תמונות על המסך
+                            </label>
+                            <label class="choice-option">
+                                <input type="radio" name="graphicsCard" value="לחבר את המחשב לאינטרנט">
+                                לחבר את המחשב לאינטרנט
+                            </label>
+                            <label class="choice-option">
+                                <input type="radio" name="graphicsCard" value="לשמור על המעבד שלא יתחמם">
+                                לשמור על המעבד שלא יתחמם
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>מה תפקיד המעבד?</label>
+                        <div class="multiple-choice">
+                            <label class="choice-option">
+                                <input type="radio" name="cpu" value="לחבר את המחשב למסך" required>
+                                לחבר את המחשב למסך
+                            </label>
+                            <label class="choice-option">
+                                <input type="radio" name="cpu" value="לשפר את איכות הצליל במחשב">
+                                לשפר את איכות הצליל במחשב
+                            </label>
+                            <label class="choice-option">
+                                <input type="radio" name="cpu" value="לבצע את כל החישובים והפעולות שמאפשרים למחשב לעבוד">
+                                לבצע את כל החישובים והפעולות שמאפשרים למחשב לעבוד
+                            </label>
+                            <label class="choice-option">
+                                <input type="radio" name="cpu" value="לאחסן את הקבצים כשהמחשב כבוי">
+                                לאחסן את הקבצים כשהמחשב כבוי
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>מה תפקיד הזיכרון?</label>
+                        <div class="multiple-choice">
+                            <label class="choice-option">
+                                <input type="radio" name="memory" value="לשמור נתונים לטווח הקצר כשהמחשב עובד" required>
+                                לשמור נתונים לטווח הקצר כשהמחשב עובד
+                            </label>
+                            <label class="choice-option">
+                                <input type="radio" name="memory" value="לקרר את המעבד">
+                                לקרר את המעבד
+                            </label>
+                            <label class="choice-option">
+                                <input type="radio" name="memory" value="לעבד את הצלילים במחשב">
+                                לעבד את הצלילים במחשב
+                            </label>
+                            <label class="choice-option">
+                                <input type="radio" name="memory" value="להגן על המחשב מפני וירוסים">
+                                להגן על המחשב מפני וירוסים
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>איזה משחקים יותר נהנתם לשחק?</label>
+                        <div class="binary-choice">
+                            <div class="binary-option">
+                                <input type="radio" id="oldGames" name="games" value="הישנים" required>
+                                <label for="oldGames">הישנים</label>
+                            </div>
+                            <div class="binary-option">
+                                <input type="radio" id="newGames" name="games" value="החדש">
+                                <label for="newGames">החדש</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="comments">יש לכם הערות / הארות? נשמח לשמוע!</label>
+                        <textarea id="comments" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">שליחה</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>© כל הזכויות שמורות - מסע בזמן 2025</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('feedbackForm');
+            const loader = document.getElementById('loader');
+            const successMessage = document.getElementById('successMessage');
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Show loader
+                loader.style.display = 'flex';
+                
+                // Get form values
+                const name = document.getElementById('name').value;
+                const enjoyment = document.querySelector('input[name="enjoyment"]:checked').value;
+                const learning = document.querySelector('input[name="learning"]:checked').value;
+                const graphicsCard = document.querySelector('input[name="graphicsCard"]:checked').value;
+                const cpu = document.querySelector('input[name="cpu"]:checked').value;
+                const memory = document.querySelector('input[name="memory"]:checked').value;
+                const games = document.querySelector('input[name="games"]:checked').value;
+                const comments = document.getElementById('comments').value;
+                
+                // Create the iframe for submission
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+                
+                // Construct Google Form URL with query parameters
+                const formAction = 'https://docs.google.com/forms/d/e/1FAIpQLScOmCoWh_JnYqh2tmK-VN89A_sdzMKLRlczkDQrVI8pc_OpQg/formResponse';
+                
+                // Add query parameters for each field
+                // Convert field values to parameters using the field IDs
+                let queryParams = new URLSearchParams();
+                queryParams.append('entry.1701412485', name);
+                queryParams.append('entry.786890152', enjoyment);
+                queryParams.append('entry.205059517', learning);
+                
+                // For graphicsCard, we need to map the text to the appropriate value
+                if (graphicsCard === 'לאחסן את כל הנתונים במחשב') {
+                    queryParams.append('entry.492003377', 'לאחסן את כל הנתונים במחשב');
+                } else if (graphicsCard === 'לעבד את הגרפיקה ולהציג תמונות על המסך') {
+                    queryParams.append('entry.492003377', 'לעבד את הגרפיקה ולהציג תמונות על המסך');
+                } else if (graphicsCard === 'לחבר את המחשב לאינטרנט') {
+                    queryParams.append('entry.492003377', 'לחבר את המחשב לאינטרנט');
+                } else {
+                    queryParams.append('entry.492003377', 'לשמור על המעבד שלא יתחמם');
+                }
+                
+                // For CPU
+                queryParams.append('entry.1347127462', cpu);
+                
+                // For memory
+                queryParams.append('entry.85300164', memory);
+                
+                // For games
+                queryParams.append('entry.1146925006', games);
+                
+                // For comments
+                queryParams.append('entry.521460832', comments);
+                
+                const fullUrl = `${formAction}?${queryParams.toString()}`;
+                
+                // Use the iframe to submit the form
+                iframe.src = fullUrl;
+                
+                // Show success message after a slight delay
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    successMessage.style.display = 'block';
+                    
+                    // Hide success message after 3 seconds
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                        form.reset(); // Reset the form
+                        
+                        // Redirect to index.html after 5 seconds (total 8 seconds after form submission)
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 2000);
+                    }, 3000);
+                    
+                    // Remove the iframe after submission
+                    setTimeout(() => {
+                        iframe.remove();
+                    }, 5000);
+                }, 1500);
+            });
+            
+            // Add ripple effect to submit button
+            const button = document.querySelector('.submit-btn');
+            button.addEventListener('click', function(e) {
+                const circle = document.createElement('div');
+                const x = e.clientX - e.target.getBoundingClientRect().left;
+                const y = e.clientY - e.target.getBoundingClientRect().top;
+                
+                circle.style.top = y + 'px';
+                circle.style.left = x + 'px';
+                
+                this.appendChild(circle);
+                
+                setTimeout(() => {
+                    circle.remove();
+                }, 500);
+            });
+        });
+    </script>
+</body>
+</html>

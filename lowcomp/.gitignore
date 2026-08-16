@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+
+# 111 MB — over GitHub's hard 100 MB file limit, so it cannot live in the repo.
+# It ships inside the installer instead, and the updater simply never sees it.
+# Git LFS is not an option here: raw.githubusercontent.com serves a pointer
+# file for LFS objects, and the updater would write that pointer over the model.
+models/food.glb
+פיצריית השף יוסף LowComp 2.0.exe

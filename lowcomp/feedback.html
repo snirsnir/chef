@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פיצריית השף יוסף - סיום</title>
+    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Varela Round', Arial, sans-serif;
+            overflow: hidden;
+            background: #1a1a2e;
+            cursor: default;
+        }
+        #scene-container { position: absolute; width: 100%; height: 100%; }
+
+        #loading-screen {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 1000; color: white;
+        }
+        .loading-title { font-size: 36px; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .loading-spinner {
+            width: 60px; height: 60px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top-color: #ff6b6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-size: 18px; color: #aaa; }
+
+        #start-screen {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 999; color: white; cursor: pointer;
+        }
+        .start-title { font-size: 48px; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .start-subtitle { font-size: 24px; color: #ffd700; margin-bottom: 40px; }
+        .start-instruction {
+            font-size: 20px; padding: 20px 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        #crosshair {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: white; font-size: 24px;
+            pointer-events: none; z-index: 100;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            display: none;
+        }
+        #controls-info {
+            position: absolute; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: white;
+            padding: 15px 30px; border-radius: 15px;
+            font-size: 14px; z-index: 100;
+            display: none; text-align: center;
+        }
+        #controls-info span { margin: 0 15px; }
+
+        /* Joseph dialogue */
+        #fb-dialogue {
+            display: none;
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(720px, 90vw);
+            background: linear-gradient(135deg, rgba(255,255,255,0.97), rgba(245,240,230,0.97));
+            border: 3px solid #c8843a;
+            border-radius: 20px;
+            padding: 24px 32px 20px;
+            z-index: 500;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.45);
+            flex-direction: column;
+            gap: 10px;
+        }
+        #fb-dlg-name {
+            font-size: 17px;
+            font-weight: bold;
+            color: #8b4500;
+            letter-spacing: 1px;
+        }
+        #fb-dlg-text {
+            font-size: 20px;
+            color: #222;
+            line-height: 1.55;
+        }
+        #fb-dlg-hint {
+            font-size: 14px;
+            color: #888;
+            text-align: left;
+            visibility: hidden;
+        }
+
+        /* ── Quiz overlay ── */
+        #quiz-overlay {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            max-width: 92vw;
+            background: linear-gradient(160deg, rgba(255,252,245,0.98), rgba(245,237,218,0.98));
+            border: 3px solid #c8843a;
+            border-radius: 20px;
+            padding: 28px 32px 24px;
+            z-index: 600;
+            box-shadow:
+                0 0 0 6px rgba(200,132,58,0.15),
+                0 0 40px rgba(200,100,0,0.3),
+                0 12px 50px rgba(0,0,0,0.55);
+            direction: rtl;
+            font-family: 'Varela Round', Arial, sans-serif;
+        }
+        #quiz-progress-wrap {
+            width: 100%;
+            height: 8px;
+            background: rgba(200,132,58,0.18);
+            border-radius: 4px;
+            margin-bottom: 22px;
+            overflow: hidden;
+        }
+        #quiz-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #c8843a, #e06010);
+            border-radius: 4px;
+            transition: width 0.55s cubic-bezier(0.34,1.2,0.64,1);
+        }
+        #quiz-question {
+            font-size: 18px;
+            color: #2a1400;
+            font-weight: bold;
+            margin-bottom: 16px;
+            line-height: 1.55;
+            text-align: right;
+        }
+        #quiz-options { display: flex; flex-direction: column; gap: 7px; }
+        .quiz-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(200,132,58,0.07);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            color: #1a0800;
+            font-size: 15px;
+            text-align: right;
+            font-family: 'Varela Round', Arial, sans-serif;
+        }
+        .quiz-option:hover { background: rgba(200,132,58,0.18); }
+        .quiz-option.selected {
+            background: rgba(200,132,58,0.28);
+            border-color: #c8843a;
+        }
+        .quiz-option input[type="radio"] {
+            width: 17px; height: 17px;
+            accent-color: #c8843a;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        #quiz-textarea {
+            width: 100%;
+            height: 88px;
+            padding: 10px 14px;
+            border: 2px solid rgba(200,132,58,0.4);
+            border-radius: 10px;
+            font-family: 'Varela Round', Arial, sans-serif;
+            font-size: 15px;
+            color: #1a0800;
+            background: rgba(255,252,245,0.9);
+            resize: none;
+            direction: rtl;
+            outline: none;
+            display: none;
+        }
+        #quiz-textarea:focus { border-color: #c8843a; }
+        #quiz-next-btn {
+            width: 100%;
+            margin-top: 16px;
+            padding: 11px 0;
+            background: linear-gradient(135deg, #e84820, #b81800);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Varela Round', Arial, sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: background 0.2s, opacity 0.2s;
+        }
+        #quiz-next-btn:hover:not(:disabled) { background: linear-gradient(135deg, #ff5830, #d02010); }
+        #quiz-next-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        #quiz-thanks {
+            display: none;
+            text-align: center;
+            padding: 10px 0 6px;
+        }
+    </style>
+</head>
+<body>
+    <div id="scene-container"></div>
+
+    <div id="loading-screen">
+        <h1 class="loading-title">פיצריית השף יוסף</h1>
+        <div class="loading-spinner"></div>
+        <p class="loading-text">טוען...</p>
+    </div>
+
+    <div id="start-screen">
+        <h1 class="start-title">משוב לפעילות</h1>
+        <h2 class="start-subtitle"></h2>
+        <p class="start-instruction">לחצו כדי להמשיך</p>
+    </div>
+
+    <div id="rot-debug" style="display:none;"></div>
+
+    <div id="crosshair">+</div>
+    <div id="controls-info">
+        <span>W/↑ קדימה</span>
+        <span>S/↓ אחורה</span>
+        <span>A/← שמאלה</span>
+        <span>D/→ ימינה</span>
+        <span>עכבר - הסתכלות</span>
+    </div>
+
+    <div id="fb-dialogue">
+        <div id="fb-dlg-name">שף יוסף</div>
+        <div id="fb-dlg-text"></div>
+        <div id="fb-dlg-hint">לחצו Enter או קליק להמשך ←</div>
+    </div>
+
+    <div id="text-input-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+        <div style="background:linear-gradient(160deg,#fffcf5,#f5edda);border:3px solid #c8843a;border-radius:16px;padding:28px 32px 24px;width:480px;max-width:90vw;direction:rtl;font-family:'Varela Round',Arial,sans-serif;box-shadow:0 12px 50px rgba(0,0,0,0.6);">
+            <div id="text-input-question" style="font-size:17px;font-weight:bold;color:#2a1400;margin-bottom:14px;line-height:1.55;"></div>
+            <textarea id="text-input-field" rows="4" placeholder="כתבו כאן... (לא חובה)" style="width:100%;padding:12px 14px;border:2px solid rgba(200,132,58,0.45);border-radius:10px;font-family:'Varela Round',Arial,sans-serif;font-size:15px;color:#1a0800;background:#fffcf5;resize:none;direction:rtl;outline:none;box-sizing:border-box;"></textarea>
+            <button id="text-input-submit" style="width:100%;margin-top:14px;padding:11px 0;background:linear-gradient(135deg,#e84820,#b81800);color:#fff;border:none;border-radius:10px;font-family:'Varela Round',Arial,sans-serif;font-size:16px;font-weight:bold;cursor:pointer;letter-spacing:0.5px;">אישור</button>
+        </div>
+    </div>
+
+    <div id="quiz-overlay">
+        <div id="quiz-progress-wrap"><div id="quiz-progress-bar"></div></div>
+        <div id="quiz-question"></div>
+        <div id="quiz-options"></div>
+        <textarea id="quiz-textarea" placeholder="כתבו כאן... (לא חובה)"></textarea>
+        <button id="quiz-next-btn" disabled>המשך</button>
+        <div id="quiz-thanks">
+            <div style="font-size:46px;margin-bottom:12px">🍕</div>
+            <div style="font-size:21px;font-weight:bold;color:#8b4500;margin-bottom:8px">תודה רבה!</div>
+            <div style="font-size:15px;color:#555;line-height:1.65">התגובה שלכם חשובה לנו מאוד.<br>נתראה בפעם הבאה עם השף יוסף!</div>
+        </div>
+    </div>
+
+    <!-- Graphics quality tier (classic script — must run before the module) -->
+    <script src="quality.js"></script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+            "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/0.1.10/spark.module.js"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { SplatMesh, SplatLoader } from '@sparkjsdev/spark';
+
+        const deg = Math.PI / 180;
+
+        const CONFIG = {
+            PLAYER_HEIGHT: 1,
+            PLAYER_SPEED: 2.5,
+            PLAYER_RADIUS: 0.4,
+            START_POSITION: new THREE.Vector3(1.7, 1, -4.66),
+            START_ROTATION: new THREE.Vector3(29.48 * deg, 56.38 * deg, -25.21 * deg),
+        };
+
+        // ── Globals ──
+        // ── Graphics quality (see quality.js) ──
+        const _storedQuality = ChefQuality.read();
+        let qualityTier = _storedQuality || 'normal';
+        let Q = ChefQuality.settings(qualityTier);
+        const fillLightObjects = [];
+
+        const sampleFrame = _storedQuality
+            ? function () {}
+            : ChefQuality.createFpsWatchdog(function (fps, tooSlow) {
+                  console.log('[quality] measured ' + fps.toFixed(1) + ' fps');
+                  if (tooSlow) applyLowQualityLive();
+                  else ChefQuality.save('normal');
+              });
+
+        function applyLowQualityLive() {
+            qualityTier = 'low';
+            Q = ChefQuality.settings('low');
+            ChefQuality.save('low');
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
+            renderer.shadowMap.enabled = false;
+            fillLightObjects.forEach(l => scene.remove(l));
+            scene.traverse(o => {
+                if (o.isMesh && o.material) {
+                    (Array.isArray(o.material) ? o.material : [o.material])
+                        .forEach(m => { m.needsUpdate = true; });
+                }
+            });
+            console.log('[quality] downgraded to low');
+        }
+
+        let scene, camera, renderer, controls;
+        let clock = new THREE.Clock();
+        let splatMesh;
+        let josephMixer = null;
+        const moveState = { forward: false, backward: false, left: false, right: false };
+        const gameState = { isLoaded: false, isPlaying: false };
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        let bobTime = 0, currentBobAmount = 0;
+        let walkSound, isWalking = false;
+        let italianSong = null;
+
+        // Camera smooth rotation
+        let camTargetQuat = null;
+
+        // Projector screen
+        let projectorScreen = null;
+        let projectorRoller = null;
+        let screenOpening   = false;
+        let screenProgress  = 0;
+
+        // ── Init ──
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.FogExp2(0xd4e5f7, 0.005);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.copy(CONFIG.START_POSITION);
+            camera.rotation.set(CONFIG.START_ROTATION.x, CONFIG.START_ROTATION.y, CONFIG.START_ROTATION.z);
+
+            renderer = new THREE.WebGLRenderer({ antialias: Q.antialias });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
+            renderer.shadowMap.enabled = Q.shadows;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            document.getElementById('scene-container').appendChild(renderer.domElement);
+
+            setupLighting();
+            setupControls();
+
+            walkSound = new Audio('audio/walk.mp3');
+            walkSound.loop = true;
+            walkSound.volume = 0.5;
+
+            italianSong = new Audio('audio/italiansong.mp3');
+            italianSong.loop = true;
+            italianSong.volume = 0.2;
+            italianSong.play().catch(() => {});
+
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            window.addEventListener('resize', () => {
+                const c = document.getElementById('scene-container');
+                const w = c.clientWidth, h = c.clientHeight;
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+                renderer.setSize(w, h);
+            });
+
+            loadWorld();
+            animate();
+        }
+
+        function setupLighting() {
+            scene.add(new THREE.AmbientLight(0xfff5e6, 0.6));
+            const sun = new THREE.DirectionalLight(0xfffaf0, 1.2);
+            sun.position.set(50, 100, 50);
+            sun.castShadow = true;
+            sun.shadow.mapSize.set(2048, 2048);
+            sun.shadow.camera.near = 0.5;
+            sun.shadow.camera.far = 500;
+            sun.shadow.camera.left = sun.shadow.camera.bottom = -50;
+            sun.shadow.camera.right = sun.shadow.camera.top = 50;
+            sun.shadow.bias = -0.0001;
+            scene.add(sun);
+            // Dropped by the low tier — see quality.js
+            const fillLight = new THREE.DirectionalLight(0xc2d1ff, 0.4);
+            fillLight.position.set(-30, 20, -30);
+            fillLightObjects.push(fillLight, new THREE.HemisphereLight(0x87CEEB, 0x8B7355, 0.5));
+            if (Q.fillLights) fillLightObjects.forEach(l => scene.add(l));
+        }
+
+        let dialogueActive = false;
+        let _forceAdvanceFn = null;
+        let introPlayed = false;
+
+        function setupControls() {
+            controls = new PointerLockControls(camera, document.body);
+
+            controls.addEventListener('lock', () => {
+                gameState.isPlaying = true;
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('crosshair').style.display = 'block';
+                document.getElementById('controls-info').style.display = 'block';
+
+                if (!introPlayed) {
+                    introPlayed = true;
+                    setTimeout(() => {
+                        new Audio('audio/psst.mp3').play().catch(() => {});
+                    }, 1000);
+                    setTimeout(() => {
+                        dialogueActive = true;
+                        controls.unlock();
+                        camTargetQuat = new THREE.Quaternion().setFromEuler(
+                            new THREE.Euler(-38.89 * deg, 55.66 * deg, 33.67 * deg)
+                        );
+                        showFeedbackDialogue();
+                    }, 4000);
+                }
+            });
+
+            controls.addEventListener('unlock', () => {
+                gameState.isPlaying = false;
+                document.getElementById('crosshair').style.display = 'none';
+                document.getElementById('controls-info').style.display = 'none';
+            });
+
+            document.getElementById('start-screen').addEventListener('click', () => controls.lock());
+        }
+
+        async function loadWorld() {
+            try {
+                const loader = new SplatLoader();
+                const packedSplats = await loader.loadAsync('models/rdy.spz', (e) => {
+                    if (e.type === 'progress' && e.lengthComputable) {
+                        document.querySelector('.loading-text').textContent =
+                            `טוען... ${((e.loaded / e.total) * 100).toFixed(0)}%`;
+                    }
+                });
+                splatMesh = new SplatMesh({ packedSplats });
+                splatMesh.position.set(0, 0, 0);
+                splatMesh.rotation.z = Math.PI;
+                scene.add(splatMesh);
+                onWorldLoaded();
+            } catch (e) {
+                console.error('SPZ failed, trying GLB:', e);
+                loadWorldGLB();
+            }
+        }
+
+        function loadWorldGLB() {
+            const loader = new GLTFLoader();
+            loader.load('models/street.glb', (gltf) => {
+                gltf.scene.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+                scene.add(gltf.scene);
+                onWorldLoaded();
+            }, (xhr) => {
+                if (xhr.total > 0)
+                    document.querySelector('.loading-text').textContent =
+                        `טוען... ${(xhr.loaded / xhr.total * 100).toFixed(0)}%`;
+            }, () => onWorldLoaded());
+        }
+
+        function onWorldLoaded() {
+            if (gameState.isLoaded) return;
+            gameState.isLoaded = true;
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'flex';
+            loadJoseph();
+            createProjectorScreen();
+        }
+
+        function createProjectorScreen() {
+            const topY = 1.8;
+            const x    = 0.65;
+            const z    = -5.3;
+            const W    = 1.5;
+            const H    = 1.1;
+            const facingY = Math.PI / 2 + -28 * deg;
+
+            const rollerGeo = new THREE.CylinderGeometry(0.03, 0.03, W + 0.1, 10);
+            projectorRoller = new THREE.Mesh(rollerGeo, new THREE.MeshStandardMaterial({ color: 0x222222 }));
+            projectorRoller.rotation.set(0, facingY, Math.PI / 2);
+            projectorRoller.position.set(x, topY, z);
+            scene.add(projectorRoller);
+
+            initQuizCanvas();
+
+            const geo = new THREE.PlaneGeometry(W, H);
+            geo.translate(0, -H / 2, 0);
+            projectorScreen = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: quizTexture, side: THREE.DoubleSide }));
+            projectorScreen.position.set(x, topY, z);
+            projectorScreen.rotation.y = facingY;
+            projectorScreen.scale.y = 0.001;
+            scene.add(projectorScreen);
+        }
+
+        function loadJoseph() {
+            const loader = new GLTFLoader();
+            loader.load('models/joseph.glb', (gltf) => {
+                const mesh = gltf.scene;
+                mesh.position.set(0.12, -0.8, -5.52);
+                mesh.rotation.set(0, 85 * deg, 0);
+                mesh.scale.set(0.7, 0.7, 0.7);
+                mesh.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+                scene.add(mesh);
+
+                if (gltf.animations && gltf.animations.length) {
+                    josephMixer = new THREE.AnimationMixer(mesh);
+                    const clip = THREE.AnimationClip.findByName(gltf.animations, 'Talk_Passionately')
+                               || gltf.animations[0];
+                    josephMixer.clipAction(clip).play();
+                }
+            }, null, err => console.error('joseph.glb failed:', err));
+        }
+
+        function onKeyDown(e) {
+            switch (e.code) {
+                case 'KeyW': case 'ArrowUp':    moveState.forward  = true; break;
+                case 'KeyS': case 'ArrowDown':  moveState.backward = true; break;
+                case 'KeyA': case 'ArrowLeft':  moveState.left     = true; break;
+                case 'KeyD': case 'ArrowRight': moveState.right    = true; break;
+            }
+        }
+        function onKeyUp(e) {
+            switch (e.code) {
+                case 'KeyW': case 'ArrowUp':    moveState.forward  = false; break;
+                case 'KeyS': case 'ArrowDown':  moveState.backward = false; break;
+                case 'KeyA': case 'ArrowLeft':  moveState.left     = false; break;
+                case 'KeyD': case 'ArrowRight': moveState.right    = false; break;
+            }
+        }
+
+        function updateMovement(delta) {
+            return;
+
+            direction.z = Number(moveState.forward) - Number(moveState.backward);
+            direction.x = Number(moveState.right)   - Number(moveState.left);
+            direction.normalize();
+
+            velocity.z = (moveState.forward  || moveState.backward) ? direction.z * CONFIG.PLAYER_SPEED * delta : 0;
+            velocity.x = (moveState.left     || moveState.right)    ? direction.x * CONFIG.PLAYER_SPEED * delta : 0;
+
+            controls.moveRight(velocity.x);
+            controls.moveForward(velocity.z);
+
+            const isMoving = moveState.forward || moveState.backward || moveState.left || moveState.right;
+
+            if (isMoving) {
+                bobTime += delta * 8;
+                currentBobAmount = Math.min(currentBobAmount + delta * 3, 1);
+            } else {
+                currentBobAmount = Math.max(currentBobAmount - delta * 3, 0);
+            }
+
+            camera.position.y = CONFIG.PLAYER_HEIGHT + Math.sin(bobTime * 2) * 0.03 * currentBobAmount;
+
+            if (isMoving && !isWalking) { walkSound.play().catch(() => {}); isWalking = true; }
+            else if (!isMoving && isWalking) { walkSound.pause(); isWalking = false; }
+        }
+
+        function showFeedbackDialogue() {
+            const box     = document.getElementById('fb-dialogue');
+            const textEl  = document.getElementById('fb-dlg-text');
+            const hintEl  = document.getElementById('fb-dlg-hint');
+
+            const lines = [
+                'ילדים והורים יקרים, אנו מקווים שנהניתם מהמסע הטעים שלנו ברחובות מילאנו',
+                'עכשיו, כשהתנור נרגע והבטן מלאה בידע, אני מאוד רוצה לשמוע מה דעתכם!',
+                'זה יעזור לנו להשתפור ולא יגזול הרבה זמן חמש שאלות קצרות וסיימנו! שנתחיל?'
+            ];
+            const pausePoints = [5.780, 12.530];
+
+            textEl.textContent = lines[0];
+            hintEl.style.visibility = 'hidden';
+            box.style.display = 'flex';
+
+            const audio = new Audio('audio/feedb.mp3');
+            let pauseIndex = 0;
+            let lineIndex  = 1;
+            let waiting    = false;
+            let done       = false;
+            _forceAdvanceFn = () => { done = true; waiting = true; advance(); };
+
+            const poller = setInterval(() => {
+                if (!waiting && pauseIndex < pausePoints.length && audio.currentTime >= pausePoints[pauseIndex]) {
+                    audio.pause();
+                    waiting = true;
+                    hintEl.textContent = 'לחצו Enter או קליק להמשך ←';
+                    hintEl.style.visibility = 'visible';
+                    pauseIndex++;
+                }
+            }, 50);
+
+            audio.addEventListener('ended', () => {
+                clearInterval(poller);
+                hintEl.textContent = 'לחצו Enter או קליק לסיום ←';
+                hintEl.style.visibility = 'visible';
+                waiting = true;
+                done = true;
+            });
+
+            function advance() {
+                if (!waiting) return;
+                if (done) {
+                    _forceAdvanceFn = null;
+                    document.removeEventListener('keydown', onKey);
+                    document.removeEventListener('mousedown', onMouse);
+                    box.style.display = 'none';
+                    dialogueActive = false;
+                    camTargetQuat = new THREE.Quaternion().setFromEuler(
+                        new THREE.Euler(19.33 * deg, 58.47 * deg, -16.64 * deg)
+                    );
+                    setTimeout(() => {
+                        screenOpening = true;
+                        const roolAudio = new Audio('audio/rooling.mp3');
+                        roolAudio.play().catch(() => {});
+                        roolAudio.addEventListener('loadedmetadata', () => {
+                            const stopAt = (roolAudio.duration - 0.75) * 1000;
+                            if (stopAt > 0) setTimeout(() => { roolAudio.pause(); }, stopAt);
+                        });
+                        setTimeout(() => { new Audio('audio/song.mp3').play().catch(() => {}); }, 2000);
+                    }, 2000);
+                    controls.lock();
+                    return;
+                }
+                textEl.textContent = lines[lineIndex++];
+                hintEl.style.visibility = 'hidden';
+                waiting = false;
+                audio.play().catch(() => {});
+            }
+
+            function onKey(e) {
+                if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); advance(); }
+            }
+            function onMouse(e) { if (e.button === 0) advance(); }
+
+            audio.play().catch(() => {});
+            document.addEventListener('keydown', onKey);
+            document.addEventListener('mousedown', onMouse);
+        }
+
+        let _nextFrameTime = 0;
+        function animate(now = 0) {
+            requestAnimationFrame(animate);
+
+            if (Q.maxFps) {
+                if (now < _nextFrameTime) return;
+                _nextFrameTime = now + 1000 / Q.maxFps;
+            }
+
+            const delta = clock.getDelta();
+            sampleFrame(delta);
+            updateMovement(delta);
+            if (josephMixer) josephMixer.update(delta);
+
+            // Smooth camera rotation
+            if (camTargetQuat) {
+                camera.quaternion.slerp(camTargetQuat, 1 - Math.pow(0.01, delta * 2.5));
+                if (camera.quaternion.angleTo(camTargetQuat) < 0.002) {
+                    camera.quaternion.copy(camTargetQuat);
+                    camTargetQuat = null;
+                }
+            }
+
+            // Projector screen unroll animation
+            if (screenOpening && projectorScreen) {
+                screenProgress = Math.min(screenProgress + delta / 1.4, 1);
+                const eased = 1 - Math.pow(1 - screenProgress, 3);
+                projectorScreen.scale.y = Math.max(eased, 0.001);
+                if (screenProgress >= 1) { screenOpening = false; showQuiz(); }
+            }
+
+            renderer.render(scene, camera);
+
+            const r = camera.rotation;
+            const toDeg = v => (v / Math.PI * 180).toFixed(2);
+            document.getElementById('rot-debug').innerHTML =
+                `rot.x: ${toDeg(r.x)}°<br>rot.y: ${toDeg(r.y)}°<br>rot.z: ${toDeg(r.z)}°`;
+        }
+
+        // ── Quiz (Canvas texture on projector screen) ──
+        const CW = 700, CH = 520;
+        let quizCanvas, quizCtx, quizTexture;
+        let quizHits  = [];
+        let quizShown = false;
+        let quizDone  = false;
+        let quizIndex = 0;
+        const quizAnswers  = {}; // form values (with letter prefix) — sent to Google
+        const quizSelected = {}; // display values — used for highlighting
+        const HEB_LETTERS  = ['א', 'ב', 'ג', 'ד'];
+
+        const QUESTIONS = [
+            { entry:'entry.1023721093', text:'מי זוכר מה השמרים עושים בתוך הבצק כדי שיהיה רך ואוורירי?', options:['נותנים לבצק את הצבע שלו','זוללים את הקמח ויוצרים בועות אוויר שמנפחות את הבצק כמו בלון','הופכים את הבצק לקשה כמו אבן','מחליפים את רוטב העגבניות'] },
+            { entry:'entry.1859375663', text:'אם אתם יוצאים לאימון כדורגל וצריכים המון "דלק" (אנרגיה), מה כדאי לשים על הפיצה?', options:['המון שומן (הצבע הירוק)','פחמימות (הצבע הצהוב), כמו תירס או בטטה','רק עלי תרד','מלח ופלפל'] },
+            { entry:'entry.1702891280', text:'למה החלבונים (הצבע האדום) כל כך חשובים לגוף שלנו?', options:['הם גורמים לפיצה להריח טוב','הם עוזרים לנו לישון טוב בצהריים','הם כמו "לבנים" שבונות את השרירים ועוזרות לנו להיות חזקים','הם הופכים את הבצק לדביק'] },
+            { entry:'entry.260415932', text:'איך היה לכם האתגר לשמור על "מד הבריאות" מאוזן וירוק?', options:['היה קל מאוד, אני כבר מומחה!','היה קצת מאתגר, הייתי צריך לחשוב לפני כל תוספת','היה קשה מאוד, כל הזמן יצא לי "יותר מדי שומן"','לא הבנתי איך להשתמש במד'] },
+            { entry:'entry.533609763', text:'האם היה לכם כיף להכין פיצות עם השף יוסף?', options:['היה כיף מאוד! נהניתי במיוחד לעצב את הפיצה','היה נחמד, אבל אני מעדיף רק לאכול את הפיצה','היה ככה-ככה, אני מעדיף משחקים אחרים','לא כל כך נהניתי'] },
+            { entry:'entry.52384686', text:'יש לכם הערות? שתפו אותנו!', type:'text' }
+        ];
+
+        function initQuizCanvas() {
+            quizCanvas = document.createElement('canvas');
+            quizCanvas.width  = CW;
+            quizCanvas.height = CH;
+            quizCtx    = quizCanvas.getContext('2d');
+            quizTexture = new THREE.CanvasTexture(quizCanvas);
+            quizTexture.colorSpace = THREE.SRGBColorSpace;
+            quizCtx.fillStyle = '#fdf7ef';
+            quizCtx.fillRect(0, 0, CW, CH);
+            quizTexture.needsUpdate = true;
+        }
+
+        function drawRR(ctx, x, y, w, h, r, fill, stroke) {
+            ctx.beginPath();
+            ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+            ctx.quadraticCurveTo(x+w,y, x+w,y+r);
+            ctx.lineTo(x+w,y+h-r);
+            ctx.quadraticCurveTo(x+w,y+h, x+w-r,y+h);
+            ctx.lineTo(x+r,y+h);
+            ctx.quadraticCurveTo(x,y+h, x,y+h-r);
+            ctx.lineTo(x,y+r);
+            ctx.quadraticCurveTo(x,y, x+r,y);
+            ctx.closePath();
+            if (fill)   { ctx.fillStyle   = fill;   ctx.fill();   }
+            if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
+        }
+
+        function wrapText(ctx, text, maxWidth) {
+            const words = text.split(' ');
+            const lines = [];
+            let cur = '';
+            for (const w of words) {
+                const test = cur ? cur + ' ' + w : w;
+                if (ctx.measureText(test).width > maxWidth && cur) { lines.push(cur); cur = w; }
+                else cur = test;
+            }
+            if (cur) lines.push(cur);
+            return lines;
+        }
+
+        function drawQuizScreen() {
+            const ctx = quizCtx;
+            quizHits = [];
+            const PAD = 38, IW = CW - PAD * 2;
+
+            ctx.clearRect(0, 0, CW, CH);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, CW, CH);
+            ctx.lineWidth = 6;
+            drawRR(ctx, 3, 3, CW-6, CH-6, 18, null, '#a85e00');
+
+            if (quizDone) {
+                ctx.direction = 'rtl';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#a85e00';
+                ctx.font = 'bold 38px Arial';
+                ctx.fillText('תודה רבה!', CW/2, CH/2 - 55);
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 20px Arial';
+                ctx.fillText('התגובה שלכם חשובה לנו מאוד', CW/2, CH/2 - 5);
+                ctx.fillText('נתראה בפעם הבאה עם השף יוסף!', CW/2, CH/2 + 32);
+
+                const btnW = 320, btnH = 52, btnX = (CW - btnW) / 2, btnY = CH/2 + 70;
+                drawRR(ctx, btnX, btnY, btnW, btnH, 14, '#a85e00', null);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 20px Arial';
+                ctx.fillText('התחילו את הפעילות מחדש', CW/2, btnY + 34);
+                quizHits.push({ type:'restart', x1:btnX, y1:btnY, x2:btnX+btnW, y2:btnY+btnH });
+
+                quizTexture.needsUpdate = true;
+                return;
+            }
+
+            const q     = QUESTIONS[quizIndex];
+            const total = QUESTIONS.length;
+
+            // Progress bar — fills right to left
+            const PBY = 55, PBH = 11;
+            drawRR(ctx, PAD, PBY, IW, PBH, 5, '#e0d0b0', null);
+            const filled = (quizIndex / total) * IW;
+            if (filled > 0) drawRR(ctx, PAD + IW - filled, PBY, filled, PBH, 5, '#a85e00', null);
+
+            // Step counter — right side
+            ctx.direction = 'ltr';
+            ctx.fillStyle = '#a85e00';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText(`${quizIndex + 1}/${total}`, CW - PAD, PBY - 5);
+
+            // Question
+            ctx.fillStyle = '#1a0a00';
+            ctx.font = 'bold 21px Arial';
+            ctx.textAlign = 'right';
+            ctx.direction = 'rtl';
+            const qLines = wrapText(ctx, q.text, IW);
+            const LH = 28;
+            const qStartY = PBY + PBH + 22;
+            qLines.forEach((l, i) => ctx.fillText(l, CW - PAD, qStartY + i * LH));
+
+            const optStartY = qStartY + qLines.length * LH + 16;
+
+            if (q.type === 'text') {
+                ctx.lineWidth = 2;
+                drawRR(ctx, PAD, optStartY, IW, 110, 10, '#fff', 'rgba(168,94,0,0.5)');
+                ctx.direction = 'rtl';
+                ctx.fillStyle = quizAnswers[q.entry] ? '#1a0800' : '#999';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'right';
+                ctx.fillText(quizAnswers[q.entry] || 'לחצו כאן לכתיבה...', CW - PAD - 12, optStartY + 46);
+                quizHits.push({ type:'textarea', x1:PAD, y1:optStartY, x2:CW-PAD, y2:optStartY+110 });
+
+                const btnY = CH - 72;
+                drawRR(ctx, PAD, btnY, IW, 50, 12, '#cc3300', null);
+                ctx.direction = 'ltr';
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 21px Arial'; ctx.textAlign = 'center';
+                ctx.fillText('שלח', CW/2, btnY + 34);
+                quizHits.push({ type:'button', x1:PAD, y1:btnY, x2:CW-PAD, y2:btnY+50 });
+            } else {
+                const rowH = 56, gap = 7;
+                q.options.forEach((opt, i) => {
+                    const y   = optStartY + i * (rowH + gap);
+                    const sel = quizSelected[q.entry] === opt;
+                    ctx.lineWidth = 2;
+                    drawRR(ctx, PAD, y, IW, rowH, 10,
+                        sel ? 'rgba(168,94,0,0.18)' : '#f5f0e8',
+                        sel ? '#a85e00' : '#ccbbaa');
+
+                    // Radio circle
+                    const cx = PAD + 26, cy = y + rowH / 2;
+                    ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI*2);
+                    ctx.fillStyle = sel ? '#a85e00' : '#fff'; ctx.fill();
+                    ctx.strokeStyle = '#a85e00'; ctx.lineWidth = 2.5; ctx.stroke();
+                    if (sel) { ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill(); }
+
+                    // Option text — RTL
+                    ctx.direction = 'rtl';
+                    ctx.fillStyle = '#1a0800'; ctx.font = 'bold 17px Arial'; ctx.textAlign = 'right';
+                    const optLines = wrapText(ctx, opt, IW - 55);
+                    const baseY = y + rowH/2 - (optLines.length - 1) * 10 + 6;
+                    optLines.forEach((l, li) => ctx.fillText(l, CW - PAD - 10, baseY + li * 20));
+
+                    const formValue = /[.!?]$/.test(opt) ? opt : opt + '.';
+                    quizHits.push({ type:'option', value:opt, formValue, entry:q.entry, x1:PAD, y1:y, x2:CW-PAD, y2:y+rowH });
+                });
+
+                const hasAns = quizSelected[q.entry] !== undefined;
+                const btnY = CH - 72;
+                drawRR(ctx, PAD, btnY, IW, 50, 12, hasAns ? '#cc3300' : '#bbbbbb', null);
+                ctx.direction = 'ltr';
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 21px Arial'; ctx.textAlign = 'center';
+                ctx.fillText(quizIndex === total - 1 ? 'שלח' : 'המשך', CW/2, btnY + 34);
+                if (hasAns) quizHits.push({ type:'button', x1:PAD, y1:btnY, x2:CW-PAD, y2:btnY+50 });
+            }
+
+            quizTexture.needsUpdate = true;
+        }
+
+        function showTextInput(question, currentVal, onConfirm) {
+            const overlay   = document.getElementById('text-input-overlay');
+            const qEl       = document.getElementById('text-input-question');
+            const field     = document.getElementById('text-input-field');
+            const submitBtn = document.getElementById('text-input-submit');
+
+            qEl.textContent = question;
+            field.value     = currentVal || '';
+            overlay.style.display = 'flex';
+            setTimeout(() => field.focus(), 50);
+
+            function confirm() {
+                overlay.style.display = 'none';
+                submitBtn.removeEventListener('click', confirm);
+                field.removeEventListener('keydown', onFieldKey);
+                onConfirm(field.value);
+            }
+            function onFieldKey(e) {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); confirm(); }
+            }
+            submitBtn.addEventListener('click', confirm);
+            field.addEventListener('keydown', onFieldKey);
+        }
+
+        function showQuiz() {
+            if (quizShown) return;
+            quizShown = true;
+            if (controls.isLocked) controls.unlock();
+            if (italianSong) { italianSong.pause(); italianSong.currentTime = 0; }
+            camTargetQuat = new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(19.33 * deg, 58.47 * deg, -16.64 * deg)
+            );
+            drawQuizScreen();
+            renderer.domElement.addEventListener('click', onQuizClick);
+        }
+
+        const _qRaycaster = new THREE.Raycaster();
+
+        function onQuizClick(e) {
+            if (!quizShown) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            const ndcX =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+            const ndcY = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+            _qRaycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+            const hits = _qRaycaster.intersectObject(projectorScreen);
+            if (!hits.length) return;
+            const uv = hits[0].uv;
+            handleQuizHit(uv.x * CW, (1 - uv.y) * CH);
+        }
+
+        function handleQuizHit(cx, cy) {
+            for (const r of quizHits) {
+                if (cx >= r.x1 && cx <= r.x2 && cy >= r.y1 && cy <= r.y2) {
+                    if (r.type === 'option') {
+                        quizSelected[r.entry] = r.value;        // for highlighting
+                        quizAnswers[r.entry]  = r.formValue;    // for Google Forms
+                        drawQuizScreen();
+                    } else if (r.type === 'textarea') {
+                        showTextInput(
+                            QUESTIONS[quizIndex].text,
+                            quizAnswers[QUESTIONS[quizIndex].entry] || '',
+                            (val) => { quizAnswers[QUESTIONS[quizIndex].entry] = val; drawQuizScreen(); }
+                        );
+                    } else if (r.type === 'button') {
+                        quizIndex++;
+                        if (quizIndex >= QUESTIONS.length) doSubmit(); else drawQuizScreen();
+                    } else if (r.type === 'restart') {
+                        window.location.href = 'index.html';
+                    }
+                    break;
+                }
+            }
+        }
+
+        function doSubmit() {
+            quizDone = true;
+            drawQuizScreen();
+
+            const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeGp1iyVSgGr_OmUKDeYqvIlb9cx-8lYKQj2PTKSerDB04Rtw/formResponse';
+
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            const params = new URLSearchParams();
+            for (const [k, v] of Object.entries(quizAnswers)) params.append(k, v || '');
+
+            iframe.src = `${FORM_URL}?${params.toString()}`;
+
+            setTimeout(() => iframe.remove(), 5000);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== '0') return;
+            if (_forceAdvanceFn) { _forceAdvanceFn(); return; }
+            document.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', key: ' ', bubbles: true, cancelable: true }));
+            document.dispatchEvent(new MouseEvent('mousedown', { button: 0, bubbles: true }));
+        });
+
+        init();
+    </script>
+</body>
+</html>
