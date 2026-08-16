@@ -853,6 +853,9 @@
             // Setup lighting
             setupLighting();
 
+            // Create street floor
+            createFloor();
+
             // Setup audio
             setupAudio();
 
@@ -992,6 +995,26 @@
 
             // Add subtle fog for atmosphere
             scene.fog = new THREE.FogExp2(0xd4e5f7, 0.005);
+        }
+
+        // ============================================
+        // STREET FLOOR
+        // ============================================
+        function createFloor() {
+            // Large asphalt street floor plane
+            const floorGeometry = new THREE.PlaneGeometry(200, 200);
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x2a2a2a,  // Dark asphalt
+                metalness: 0.1,
+                roughness: 0.9,
+                side: THREE.DoubleSide
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;  // Lay it flat
+            floor.position.y = -0.95;  // Just below camera start point
+            floor.receiveShadow = true;
+            scene.add(floor);
+            console.log('Street floor added');
         }
 
         // ============================================
