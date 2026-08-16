@@ -922,6 +922,7 @@
 
             // Delay model loading until video plays and ends
             startVid.onended = () => {
+                console.log('[video] ended, now loading scene models');
                 loadSceneModels();
             };
 
@@ -1292,7 +1293,7 @@
         // MODEL LOADING - SPZ (Gaussian Splatting)
         // ============================================
         async function loadSPZModel() {
-            console.log('Loading SPZ model with Spark...');
+            console.log('[SPZ] starting to load rdy.spz...');
 
             try {
                 // Use SplatLoader for more reliable loading
@@ -1403,8 +1404,9 @@
             // Start video and transition to start screen when it ends
             const startOverlay = document.getElementById('start-video-overlay');
             const startVid     = document.getElementById('start-video');
+            console.log('[video] showing overlay, starting video...');
             startOverlay.style.display = 'flex';
-            startVid.play().catch(() => {});
+            startVid.play().catch(() => console.error('[video] play failed'));
 
             function showStartScreen() {
                 startOverlay.style.display = 'none';
