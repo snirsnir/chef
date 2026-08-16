@@ -46,26 +46,31 @@
                          visually and removes a lot of distant geometry.
          maxPixelRadius  clamp on huge close-up splats, capping worst-case
                          overdraw when the camera is right against a wall. */
+    /* This is the LowComp build. Its models/ already holds decimated splat
+       files — rdy.spz cut from 3.8M splats to 350K, rest.spz from 2M to 250K —
+       so the per-splat cost that no resolution setting could touch is already
+       an order of magnitude lower here. The tiers below go further still,
+       because these machines are roughly ten years old. */
     var PRESETS = {
         normal: {
-            maxPixelRatio: 0.6, antialias: false, shadows: false, fillLights: false,
-            splatsEnabled: true, maxFps: 60,
-            splat: { maxStdDev: 2.4, minAlpha: 0.010, minPixelRadius: 0.5, maxPixelRadius: 256 }
-        },
-        low: {
-            maxPixelRatio: 0.5, antialias: false, shadows: false, fillLights: false,
+            maxPixelRatio: 0.45, antialias: false, shadows: false, fillLights: false,
             splatsEnabled: true, maxFps: 40,
             splat: { maxStdDev: 2.0, minAlpha: 0.020, minPixelRadius: 1.0, maxPixelRadius: 192 }
         },
-        ultra: {
-            maxPixelRatio: 0.4, antialias: false, shadows: false, fillLights: false,
+        low: {
+            maxPixelRatio: 0.35, antialias: false, shadows: false, fillLights: false,
             splatsEnabled: true, maxFps: 30,
             splat: { maxStdDev: 1.7, minAlpha: 0.040, minPixelRadius: 1.5, maxPixelRadius: 128 }
         },
+        ultra: {
+            maxPixelRatio: 0.28, antialias: false, shadows: false, fillLights: false,
+            splatsEnabled: true, maxFps: 24,
+            splat: { maxStdDev: 1.5, minAlpha: 0.060, minPixelRadius: 2.0, maxPixelRadius: 96 }
+        },
         extreme: {
-            maxPixelRatio: 0.3, antialias: false, shadows: false, fillLights: false,
+            maxPixelRatio: 0.22, antialias: false, shadows: false, fillLights: false,
             splatsEnabled: true, maxFps: 20,
-            splat: { maxStdDev: 1.4, minAlpha: 0.060, minPixelRadius: 2.0, maxPixelRadius: 96 }
+            splat: { maxStdDev: 1.3, minAlpha: 0.090, minPixelRadius: 2.5, maxPixelRadius: 72 }
         }
     };
 
