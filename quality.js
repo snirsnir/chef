@@ -24,7 +24,7 @@
     var KEY = 'chef-quality';
 
     var PRESETS = {
-        normal:   { maxPixelRatio: 2,    antialias: true,  shadows: true,  fillLights: true,  splatsEnabled: true,  maxFps: 0  },
+        normal:   { maxPixelRatio: 1.5,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 0  },
         low:      { maxPixelRatio: 1,    antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 30 },
         ultra:    { maxPixelRatio: 0.5,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 24 },
         extreme:  { maxPixelRatio: 0.25, antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 15 }

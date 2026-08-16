@@ -1,13 +1,16 @@
 /* ============================================================
-   LOWCOMP BUILD — Ultra-low graphics tier forced on all machines.
+   Runtime graphics quality — shared by index.html, street.html,
+   rest.html and feedback.html.
 
-   This build is for very old/weak machines. The quality tier is hard-coded
-   to 'ultra' with no measurement, no button, no localStorage choice. Runs at:
-   - 0.5× pixel ratio (quarter resolution)
-   - No shadows, no anti-aliasing
-   - No fill lights
-   - No Gaussian Splats (SPZ)
-   - Frame rate capped at 24 fps
+   Three tiers:
+     normal — everything on (2× pixels, shadows, AA, fill lights, uncapped fps)
+     low    — half pixels, no shadows/AA/fill lights, 30 fps cap
+     ultra  — quarter pixels, no splats, 24 fps cap (for gen-3/4 Intel machines)
+
+   The tier is remembered per machine in localStorage. A machine that has
+   never been graded runs the first scene at 'normal', measures its own
+   frame rate for two seconds. If fps < 20, demotes to 'ultra'. If fps < 40,
+   demotes to 'low'. The opening screen can also pin a tier by hand.
 
    Loaded as a CLASSIC script, not an ES module: Chromium blocks relative
    module imports over file:// (the protocol the packaged app runs on), so
@@ -21,13 +24,13 @@
     var KEY = 'chef-quality';
 
     var PRESETS = {
-        normal:   { maxPixelRatio: 2,    antialias: true,  shadows: true,  fillLights: true,  splatsEnabled: true,  maxFps: 0  },
+        normal:   { maxPixelRatio: 1.5,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 0  },
         low:      { maxPixelRatio: 1,    antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 30 },
         ultra:    { maxPixelRatio: 0.5,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 24 },
         extreme:  { maxPixelRatio: 0.25, antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 15 }
     };
 
-    // Downgrade thresholds (not used in lowcomp, but kept for consistency)
+    // Downgrade thresholds: if fps < 20 go to ultra, if < 40 go to low
     var FPS_ULTRA_THRESHOLD = 20;
     var FPS_DOWNGRADE_THRESHOLD = 40;
 
@@ -56,8 +59,9 @@
     /* Returns a function to call once per rendered frame with that frame's
        delta in seconds. It averages the frame rate over a two second window
        of real frames — after skipping the warm-up frames, which are dominated
-       by shader compilation and texture uploads — then calls
-       onResult(fps, isTooSlow) exactly once and does nothing thereafter. */
+       by shader compilation and texture uploads — then calls onResult(fps, tier)
+       exactly once and does nothing thereafter. Tier is 'ultra' if fps < 20,
+       'low' if fps < 40, else 'normal'. */
     function createFpsWatchdog(onResult) {
         var SKIP_FRAMES = 30, WINDOW_SECONDS = 2;
         var skipped = 0, frames = 0, elapsed = 0, finished = false;
@@ -73,20 +77,18 @@
             if (elapsed < WINDOW_SECONDS) return;
             finished = true;
             var fps = frames / elapsed;
-            onResult(fps, fps < FPS_DOWNGRADE_THRESHOLD);
+            var tier = fps < FPS_ULTRA_THRESHOLD ? 'ultra' : (fps < FPS_DOWNGRADE_THRESHOLD ? 'low' : 'normal');
+            onResult(fps, tier);
         };
     }
 
-    // ── LOWCOMP: Hard-coded extreme, no options ──
     window.ChefQuality = {
         KEY: KEY,
         FPS_ULTRA_THRESHOLD: FPS_ULTRA_THRESHOLD,
         FPS_DOWNGRADE_THRESHOLD: FPS_DOWNGRADE_THRESHOLD,
-        read: function() { return 'extreme'; },          // Always extreme
-        save: function() { return true; },               // No-op
+        read: read,
+        save: save,
         settings: settings,
-        createFpsWatchdog: function() {                  // No measurement
-            return function sampleFrame(delta) {};
-        }
+        createFpsWatchdog: createFpsWatchdog
     };
 })();
