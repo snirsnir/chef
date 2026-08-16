@@ -1437,10 +1437,13 @@
             });
 
             startBtn.addEventListener('click', () => {
+                console.log('[button] start button clicked');
                 startVid.pause();
                 // Hide video overlay and show start screen
                 startOverlay.style.display = 'none';
                 document.getElementById('start-screen').style.display = 'flex';
+                // Load the scene models when button is clicked
+                loadSceneModels();
             });
 
 
