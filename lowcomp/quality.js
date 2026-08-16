@@ -23,11 +23,16 @@
 
     var KEY = 'chef-quality';
 
+    /* maxPixelRatio only scales the WebGL canvas — the HTML overlays (mission
+       popups, health meter, button labels) are drawn by the browser at full
+       resolution and stay crisp no matter how low this goes. What blurs is the
+       3D world itself and any text baked into a model texture, such as the menu
+       sign. 0.4 is roughly the floor where that sign is still legible. */
     var PRESETS = {
-        normal:   { maxPixelRatio: 0.75, antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 60 },
-        low:      { maxPixelRatio: 0.5,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 45 },
-        ultra:    { maxPixelRatio: 0.35, antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 30 },
-        extreme:  { maxPixelRatio: 0.25, antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 15 }
+        normal:   { maxPixelRatio: 0.6,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 60 },
+        low:      { maxPixelRatio: 0.5,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 40 },
+        ultra:    { maxPixelRatio: 0.4,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 30 },
+        extreme:  { maxPixelRatio: 0.3,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 20 }
     };
 
     // Downgrade thresholds: if fps < 20 go to ultra, if < 40 go to low
