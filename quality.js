@@ -34,10 +34,16 @@
        the work per splat instead of blurring the whole frame:
 
          maxStdDev       how many standard deviations of each Gaussian get drawn.
-                         The shader sizes the quad as maxStdDev * sqrt(eigen), so
-                         halving it quarters the fill rate. Spark's default is
-                         sqrt(8) ~ 2.83. Too low and splats get visibly clipped
-                         into hard-edged discs.
+                         Keep this near Spark's default of sqrt(8) ~ 2.83. The
+                         fragment shader hard-discards past the limit, and the
+                         Gaussian still carries real opacity there: 1.8% at
+                         2.83, but 13.5% at 2.0 and 43% at 1.3. Clipping at that
+                         depth turns every soft splat into a hard-edged ellipse,
+                         and the flat elongated ones read as black shards. It is
+                         a poor lever anyway — the whole artifact-free range from
+                         2.83 down to 2.4 buys only 28% of fill rate, which
+                         decimating the model or dropping maxPixelRatio gives up
+                         many times over without changing any splat's shape.
          minAlpha        splats fainter than this are dropped in the *vertex*
                          shader, before rasterising a single pixel. Spark's
                          default of 0.5/255 keeps almost everything.
@@ -50,22 +56,22 @@
         normal: {
             maxPixelRatio: 0.6, antialias: false, shadows: false, fillLights: false,
             splatsEnabled: true, maxFps: 60,
-            splat: { maxStdDev: 2.4, minAlpha: 0.010, minPixelRadius: 0.5, maxPixelRadius: 256 }
+            splat: { maxStdDev: 2.6, minAlpha: 0.010, minPixelRadius: 0.50, maxPixelRadius: 256 }
         },
         low: {
             maxPixelRatio: 0.5, antialias: false, shadows: false, fillLights: false,
             splatsEnabled: true, maxFps: 40,
-            splat: { maxStdDev: 2.0, minAlpha: 0.020, minPixelRadius: 1.0, maxPixelRadius: 192 }
+            splat: { maxStdDev: 2.5, minAlpha: 0.015, minPixelRadius: 0.75, maxPixelRadius: 208 }
         },
         ultra: {
             maxPixelRatio: 0.4, antialias: false, shadows: false, fillLights: false,
             splatsEnabled: true, maxFps: 30,
-            splat: { maxStdDev: 1.7, minAlpha: 0.040, minPixelRadius: 1.5, maxPixelRadius: 128 }
+            splat: { maxStdDev: 2.4, minAlpha: 0.020, minPixelRadius: 1.00, maxPixelRadius: 176 }
         },
         extreme: {
             maxPixelRatio: 0.3, antialias: false, shadows: false, fillLights: false,
             splatsEnabled: true, maxFps: 20,
-            splat: { maxStdDev: 1.4, minAlpha: 0.060, minPixelRadius: 2.0, maxPixelRadius: 96 }
+            splat: { maxStdDev: 2.3, minAlpha: 0.030, minPixelRadius: 1.25, maxPixelRadius: 144 }
         }
     };
 
