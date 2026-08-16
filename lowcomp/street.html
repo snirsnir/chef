@@ -931,11 +931,13 @@
         // SCENE MODEL LOADING (globally accessible for button clicks)
         // ============================================
         function loadSceneModels() {
-            console.log('[loading] video ended, now loading scene models');
+            console.log('[loadSceneModels] starting, CONFIG.USE_SPZ:', CONFIG.USE_SPZ);
             // Load the scene
             if (CONFIG.USE_SPZ) {
+                console.log('[loadSceneModels] calling loadSPZModel...');
                 loadSPZModel();
             } else {
+                console.log('[loadSceneModels] calling loadGLBModel...');
                 loadGLBModel();
             }
 
@@ -1299,11 +1301,13 @@
         // MODEL LOADING - SPZ (Gaussian Splatting)
         // ============================================
         async function loadSPZModel() {
-            console.log('[SPZ] starting to load rdy.spz...');
+            console.log('[loadSPZModel] starting to load rdy.spz...');
 
             try {
+                console.log('[loadSPZModel] creating SplatLoader...');
                 // Use SplatLoader for more reliable loading
                 const loader = new SplatLoader();
+                console.log('[loadSPZModel] calling loader.loadAsync...');
 
                 const packedSplats = await loader.loadAsync('models/rdy.spz', (event) => {
                     if (event.type === 'progress' && event.lengthComputable) {
