@@ -1443,16 +1443,16 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         // Only grade the machine when nothing was decided before.
         const sampleFrame = _storedQuality
             ? function () {}
-            : ChefQuality.createFpsWatchdog(function (fps, tooSlow) {
-                  console.log('[quality] measured ' + fps.toFixed(1) + ' fps');
-                  if (tooSlow) applyLowQualityLive();
+            : ChefQuality.createFpsWatchdog(function (fps, tier) {
+                  console.log('[quality] measured ' + fps.toFixed(1) + ' fps → ' + tier);
+                  if (tier !== 'normal') applyQualityTierLive(tier);
                   else ChefQuality.save('normal');
               });
 
-        function applyLowQualityLive() {
-            qualityTier = 'low';
-            Q = ChefQuality.settings('low');
-            ChefQuality.save('low');
+        function applyQualityTierLive(tier) {
+            qualityTier = tier;
+            Q = ChefQuality.settings(tier);
+            ChefQuality.save(tier);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
             renderer.shadowMap.enabled = false;
             fillLightObjects.forEach(l => scene.remove(l));
@@ -1465,8 +1465,8 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                 }
             });
             // antialias is fixed when the WebGL context is created, so it can
-            // only take effect on the next launch — which now starts in 'low'.
-            console.log('[quality] downgraded to low');
+            // only take effect on the next launch — which now starts in the tier.
+            console.log('[quality] downgraded to ' + tier);
         }
 
         // ============================================
@@ -5557,6 +5557,13 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         // RESTAURANT SCENE LOADING (SPZ)
         // ============================================
         async function loadRestaurantScene() {
+            if (!Q.splatsEnabled) {
+                console.log('[quality] skipping restaurant SPZ (splats disabled)');
+                gameState.splatReady = true;
+                onModelLoaded();
+                return;
+            }
+
             console.log('Loading restaurant SPZ model...');
 
             try {

@@ -226,18 +226,18 @@
         btn.addEventListener('click', goNext);
 
         // ── Graphics quality toggle ──
-        // Cycles אוטומטית → חלשה → רגילה. "אוטומטית" lets the first scene
-        // measure its own frame rate and pin a tier; the other two force it,
-        // which is what you want when preparing a lab machine in advance.
+        // Cycles אוטומטית → קיצוני → חלשה → רגילה. "אוטומטית" lets the first scene
+        // measure its own frame rate and pin a tier; the others force it.
         (() => {
             const btn  = document.getElementById('quality-btn');
             const hint = document.getElementById('quality-hint');
             const LABELS = {
                 auto:   { text: '⚙ גרפיקה: אוטומטית', hint: 'המשחק ימדוד את המחשב ויתאים את עצמו' },
+                ultra:  { text: '🔥 גרפיקה: קיצוני',   hint: 'רזולוציה נמוכה מאוד, אין סplats — למחשבים ישנים' },
                 low:    { text: '🐢 גרפיקה: חלשה',    hint: 'פחות פיקסלים, בלי צללים — למחשבים חלשים' },
                 normal: { text: '⚡ גרפיקה: רגילה',   hint: 'איכות מלאה — למחשבים חזקים' }
             };
-            const NEXT = { auto: 'low', low: 'normal', normal: 'auto' };
+            const NEXT = { auto: 'ultra', ultra: 'low', low: 'normal', normal: 'auto' };
 
             function current() { return ChefQuality.read() || 'auto'; }
 

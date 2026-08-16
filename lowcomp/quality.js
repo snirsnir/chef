@@ -1,12 +1,13 @@
 /* ============================================================
-   LOWCOMP BUILD — Low graphics tier forced on all machines.
+   LOWCOMP BUILD — Ultra-low graphics tier forced on all machines.
 
-   This build is for weak machines. The quality tier is hard-coded to 'low'
-   with no measurement, no button, no localStorage choice. Runs at:
-   - 1× pixel ratio (not 2×)
+   This build is for very old/weak machines. The quality tier is hard-coded
+   to 'ultra' with no measurement, no button, no localStorage choice. Runs at:
+   - 0.5× pixel ratio (quarter resolution)
    - No shadows, no anti-aliasing
    - No fill lights
-   - Frame rate capped at 30 fps
+   - No Gaussian Splats (SPZ)
+   - Frame rate capped at 24 fps
 
    Loaded as a CLASSIC script, not an ES module: Chromium blocks relative
    module imports over file:// (the protocol the packaged app runs on), so
@@ -20,11 +21,13 @@
     var KEY = 'chef-quality';
 
     var PRESETS = {
-        normal: { maxPixelRatio: 2, antialias: true,  shadows: true,  fillLights: true,  maxFps: 0  },
-        low:    { maxPixelRatio: 1, antialias: false, shadows: false, fillLights: false, maxFps: 30 }
+        normal: { maxPixelRatio: 2, antialias: true,  shadows: true,  fillLights: true,  splatsEnabled: true,  maxFps: 0  },
+        low:    { maxPixelRatio: 1, antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 30 },
+        ultra:  { maxPixelRatio: 0.5, antialias: false, shadows: false, fillLights: false, splatsEnabled: false, maxFps: 24 }
     };
 
-    // Below this average frame rate a scene demotes itself to 'low'.
+    // Downgrade thresholds (not used in lowcomp, but kept for consistency)
+    var FPS_ULTRA_THRESHOLD = 20;
     var FPS_DOWNGRADE_THRESHOLD = 40;
 
     // localStorage can be unavailable or throw on some file:// origins.
@@ -32,7 +35,7 @@
     function read() {
         try {
             var v = window.localStorage.getItem(KEY);
-            if (v === 'low' || v === 'normal') return v;
+            if (v === 'low' || v === 'normal' || v === 'ultra') return v;
         } catch (e) { /* storage blocked — fall back to measuring each run */ }
         return null;
     }
@@ -73,11 +76,12 @@
         };
     }
 
-    // ── LOWCOMP: Hard-coded low, no options ──
+    // ── LOWCOMP: Hard-coded ultra, no options ──
     window.ChefQuality = {
         KEY: KEY,
+        FPS_ULTRA_THRESHOLD: FPS_ULTRA_THRESHOLD,
         FPS_DOWNGRADE_THRESHOLD: FPS_DOWNGRADE_THRESHOLD,
-        read: function() { return 'low'; },              // Always low
+        read: function() { return 'ultra'; },            // Always ultra
         save: function() { return true; },               // No-op
         settings: settings,
         createFpsWatchdog: function() {                  // No measurement

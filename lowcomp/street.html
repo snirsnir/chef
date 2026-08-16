@@ -565,16 +565,16 @@
 
         const sampleFrame = _storedQuality
             ? function () {}
-            : ChefQuality.createFpsWatchdog(function (fps, tooSlow) {
-                  console.log('[quality] measured ' + fps.toFixed(1) + ' fps');
-                  if (tooSlow) applyLowQualityLive();
+            : ChefQuality.createFpsWatchdog(function (fps, tier) {
+                  console.log('[quality] measured ' + fps.toFixed(1) + ' fps → ' + tier);
+                  if (tier !== 'normal') applyQualityTierLive(tier);
                   else ChefQuality.save('normal');
               });
 
-        function applyLowQualityLive() {
-            qualityTier = 'low';
-            Q = ChefQuality.settings('low');
-            ChefQuality.save('low');
+        function applyQualityTierLive(tier) {
+            qualityTier = tier;
+            Q = ChefQuality.settings(tier);
+            ChefQuality.save(tier);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
             renderer.shadowMap.enabled = false;
             fillLightObjects.forEach(l => scene.remove(l));
@@ -584,7 +584,7 @@
                         .forEach(m => { m.needsUpdate = true; });
                 }
             });
-            console.log('[quality] downgraded to low');
+            console.log('[quality] downgraded to ' + tier);
         }
 
         let scene, camera, renderer;
@@ -1228,6 +1228,13 @@
         // MODEL LOADING - SPZ (Gaussian Splatting)
         // ============================================
         async function loadSPZModel() {
+            if (!Q.splatsEnabled) {
+                console.log('[quality] skipping street SPZ (splats disabled)');
+                gameState.splatReady = true;
+                onModelLoaded();
+                return;
+            }
+
             console.log('Loading SPZ model with Spark...');
 
             try {

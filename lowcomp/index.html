@@ -124,6 +124,10 @@
 
         #start-btn:hover  { transform: scale(1.07); }
         #start-btn:active { transform: scale(0.96); }
+
+
+        /* ── Graphics quality toggle (mirrors the updater button, other side) ── */
+        #quality-btn, #quality-hint { display: none; }
     </style>
 </head>
 <body>
@@ -140,6 +144,9 @@
 
         <button id="start-btn">לחצו להתחלה</button>
     </div>
+
+    <div id="quality-hint"></div>
+    <button id="quality-btn">גרפיקה</button>
 
     <script src="quality.js"></script>
     <script>
@@ -201,7 +208,39 @@
 
         btn.addEventListener('click', goNext);
 
-        // LOWCOMP: Quality tier is hard-coded to low, no button
+        // ── Graphics quality toggle ──
+        // Cycles אוטומטית → קיצוני → חלשה → רגילה. "אוטומטית" lets the first scene
+        // measure its own frame rate and pin a tier; the others force it.
+        (() => {
+            const btn  = document.getElementById('quality-btn');
+            const hint = document.getElementById('quality-hint');
+            const LABELS = {
+                auto:   { text: '⚙ גרפיקה: אוטומטית', hint: 'המשחק ימדוד את המחשב ויתאים את עצמו' },
+                ultra:  { text: '🔥 גרפיקה: קיצוני',   hint: 'רזולוציה נמוכה מאוד, אין סplats — למחשבים ישנים' },
+                low:    { text: '🐢 גרפיקה: חלשה',    hint: 'פחות פיקסלים, בלי צללים — למחשבים חלשים' },
+                normal: { text: '⚡ גרפיקה: רגילה',   hint: 'איכות מלאה — למחשבים חזקים' }
+            };
+            const NEXT = { auto: 'ultra', ultra: 'low', low: 'normal', normal: 'auto' };
+
+            function current() { return ChefQuality.read() || 'auto'; }
+
+            function paint() {
+                const l = LABELS[current()];
+                btn.textContent = l.text;
+                hint.textContent = l.hint;
+            }
+
+            btn.addEventListener('click', () => {
+                const next = NEXT[current()];
+                if (!ChefQuality.save(next === 'auto' ? null : next)) {
+                    hint.textContent = '⚠ לא ניתן לשמור את ההגדרה במחשב הזה';
+                    return;
+                }
+                paint();
+            });
+
+            paint();
+        })();
 
     </script>
 </body>
