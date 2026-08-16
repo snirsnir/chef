@@ -149,6 +149,54 @@ const keep = Uint32Array.from(picked);
 keep.sort();
 console.log(`grid ${cells}^3, ${buckets.size.toLocaleString()} occupied voxels -> ${keep.length.toLocaleString()} splats`);
 
+/* Grow the survivors to cover for the splats that went.
+
+   A splat's size was fitted against its original neighbours, so a surface is
+   only opaque because many overlapping splats accumulate there. Remove four
+   fifths of them and the survivors, still at their fitted size, no longer meet:
+   a wall turns into speckle with the sky behind it showing through the gaps.
+
+   Compensation is per region and by area, not by count, because these scenes
+   are lopsided enough that a handful of huge splats can carry a voxel's whole
+   area while dozens of small ones vanish. On a grid coarse enough to hold many
+   splats per cell, each kept splat is scaled by sqrt(original area / kept area)
+   for its cell, which is the factor that restores that cell's covered area.
+   Clamped, since a cell that kept only a tiny sliver of its area would
+   otherwise demand a growth factor that turns one splat into a balloon. */
+const COMP_CELLS = 128;
+const COMP_MAX = 2.5;
+const compCell = extent / COMP_CELLS;
+const areaBefore = new Map(), areaAfter = new Map();
+
+function addArea(map, i) {
+    const key = voxelKey(i, COMP_CELLS, compCell);
+    const s = meanScale[i];
+    map.set(key, (map.get(key) ?? 0) + s * s);
+}
+for (let i = 0; i < n; i++) addArea(areaBefore, i);
+for (const i of keep) addArea(areaAfter, i);
+
+const grow = new Float32Array(n);
+let growSum = 0, growMax = 0, clamped = 0;
+for (const i of keep) {
+    const key = voxelKey(i, COMP_CELLS, compCell);
+    const before = areaBefore.get(key) ?? 0;
+    const after = areaAfter.get(key) ?? 0;
+    let f = after > 0 ? Math.sqrt(before / after) : 1;
+    if (f < 1) f = 1;
+    if (f > COMP_MAX) { f = COMP_MAX; clamped++; }
+    grow[i] = f;
+    growSum += f;
+    if (f > growMax) growMax = f;
+}
+console.log(`size compensation: mean ${(growSum / keep.length).toFixed(2)}x, max ${growMax.toFixed(2)}x, ` +
+            `${(100 * clamped / keep.length).toFixed(1)}% hit the ${COMP_MAX}x clamp`);
+
+let areaSrc = 0, areaKept = 0;
+for (let i = 0; i < n; i++) areaSrc += meanScale[i] * meanScale[i];
+for (const i of keep) areaKept += (meanScale[i] * grow[i]) ** 2;
+console.log(`covered area after compensation: ${(100 * areaKept / areaSrc).toFixed(1)}% of source`);
+
 /* Coverage audit. The selection grid cannot be its own yardstick, so measure on
    a fixed independent grid: of the voxels that held geometry originally, how
    many still do. This is the check that the holes are gone — a global ranking
@@ -176,7 +224,8 @@ for (let out = 0; out < keep.length; out++) {
     const i = keep[out];
     writer.setCenter(out, centers[i * 3], centers[i * 3 + 1], centers[i * 3 + 2]);
     writer.setAlpha(out, alphas[i]);
-    writer.setScale(out, scales[i * 3], scales[i * 3 + 1], scales[i * 3 + 2]);
+    const g = grow[i];
+    writer.setScale(out, scales[i * 3] * g, scales[i * 3 + 1] * g, scales[i * 3 + 2] * g);
     writer.setQuat(out, quats[i * 4], quats[i * 4 + 1], quats[i * 4 + 2], quats[i * 4 + 3]);
     writer.setRgb(out, colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]);
 }

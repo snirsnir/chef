@@ -47,31 +47,42 @@
          minAlpha        splats fainter than this are dropped in the *vertex*
                          shader, before rasterising a single pixel. Spark's
                          default of 0.5/255 keeps almost everything.
-         minPixelRadius  drop splats smaller than this on screen. Sub-pixel
-                         splats only alias, so culling them is nearly free
-                         visually and removes a lot of distant geometry.
+         minPixelRadius  drop splats smaller than this on screen. Keep it under
+                         a pixel. It is measured against the render target, not
+                         the window, so a low maxPixelRatio shrinks the target
+                         and the same threshold starts cutting splats that are
+                         plainly visible — at 0.22 the target is about 422x238,
+                         where 1.5px is 0.6% of the screen height.
          maxPixelRadius  clamp on huge close-up splats, capping worst-case
-                         overdraw when the camera is right against a wall. */
+                         overdraw when the camera is right against a wall. The
+                         quad shrinks but the Gaussian is still mapped across
+                         its full width, so clamping hard makes big splats
+                         render smaller than they should and opens gaps.
+
+       Anything that culls or shrinks splats has to be kept gentle here, because
+       the scenes are drawn over a near-black asphalt floor and a blue sky. Every
+       gap left in the splats shows one of those through, which is what the dark
+       speckles on the ground and the blue mottling on the walls were. */
     var PRESETS = {
         normal: {
             maxPixelRatio: 0.6, antialias: false, shadows: false, fillLights: false,
             splatsEnabled: true, maxFps: 60,
-            splat: { maxStdDev: 2.6, minAlpha: 0.010, minPixelRadius: 0.50, maxPixelRadius: 256 }
+            splat: { maxStdDev: 2.7, minAlpha: 0.005, minPixelRadius: 0.25, maxPixelRadius: 384 }
         },
         low: {
             maxPixelRatio: 0.5, antialias: false, shadows: false, fillLights: false,
             splatsEnabled: true, maxFps: 40,
-            splat: { maxStdDev: 2.5, minAlpha: 0.015, minPixelRadius: 0.75, maxPixelRadius: 208 }
+            splat: { maxStdDev: 2.6, minAlpha: 0.006, minPixelRadius: 0.30, maxPixelRadius: 384 }
         },
         ultra: {
             maxPixelRatio: 0.4, antialias: false, shadows: false, fillLights: false,
             splatsEnabled: true, maxFps: 30,
-            splat: { maxStdDev: 2.4, minAlpha: 0.020, minPixelRadius: 1.00, maxPixelRadius: 176 }
+            splat: { maxStdDev: 2.5, minAlpha: 0.008, minPixelRadius: 0.35, maxPixelRadius: 384 }
         },
         extreme: {
             maxPixelRatio: 0.3, antialias: false, shadows: false, fillLights: false,
             splatsEnabled: true, maxFps: 20,
-            splat: { maxStdDev: 2.3, minAlpha: 0.030, minPixelRadius: 1.25, maxPixelRadius: 144 }
+            splat: { maxStdDev: 2.4, minAlpha: 0.010, minPixelRadius: 0.40, maxPixelRadius: 384 }
         }
     };
 
