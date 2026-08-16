@@ -903,6 +903,9 @@
                 loadSceneModels();
             };
 
+            // Start the video (this triggers onModelLoaded which shows the video overlay)
+            onModelLoaded();
+
             // Show debug if enabled
             if (CONFIG.DEBUG_MODE) {
                 document.getElementById('position-debug').style.display = 'block';
@@ -1385,7 +1388,7 @@
                 startOverlay.style.display = 'none';
                 document.getElementById('start-screen').style.display = 'flex';
             }
-            startVid.onended = showStartScreen;
+            // Don't override onended callback — it's already set to loadSceneModels()
             startVid.onerror = showStartScreen;
 
             document.addEventListener('keydown', (e) => {
