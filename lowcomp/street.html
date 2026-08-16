@@ -893,6 +893,9 @@
 
                 // Load menu sign
                 loadMenuGlb();
+
+                // Trigger UI show (video overlay, start screen)
+                onModelLoaded();
             }
 
             // Delay model loading until video plays and ends
@@ -1293,7 +1296,6 @@
 
                 console.log('SPZ model loaded successfully!');
                 gameState.splatReady = true;
-                onModelLoaded();
 
             } catch (error) {
                 console.error('Error loading SPZ:', error);
