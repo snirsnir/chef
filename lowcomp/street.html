@@ -899,28 +899,6 @@
             const startVid     = document.getElementById('start-video');
             console.log('[init] startOverlay:', startOverlay, 'startVid:', startVid);
 
-            function loadSceneModels() {
-                console.log('[loading] video ended, now loading scene models');
-                // Load the scene
-                if (CONFIG.USE_SPZ) {
-                    loadSPZModel();
-                } else {
-                    loadGLBModel();
-                }
-
-                // Load walking person
-                loadWalkingPerson();
-
-                // Skip wandering characters (too heavy on old hardware)
-                // loadWanderingCharacters();
-
-                // Load PNG image
-                loadImagePlane();
-
-                // Load menu sign
-                loadMenuGlb();
-            }
-
             // Delay model loading until video plays and ends
             console.log('[video] setting onended handler...');
             startVid.onended = () => {
@@ -947,6 +925,31 @@
                 document.getElementById('mobile-controls').style.display = 'block';
                 setupMobileControls();
             }
+        }
+
+        // ============================================
+        // SCENE MODEL LOADING (globally accessible for button clicks)
+        // ============================================
+        function loadSceneModels() {
+            console.log('[loading] video ended, now loading scene models');
+            // Load the scene
+            if (CONFIG.USE_SPZ) {
+                loadSPZModel();
+            } else {
+                loadGLBModel();
+            }
+
+            // Load walking person
+            loadWalkingPerson();
+
+            // Skip wandering characters (too heavy on old hardware)
+            // loadWanderingCharacters();
+
+            // Load PNG image
+            loadImagePlane();
+
+            // Load menu sign
+            loadMenuGlb();
         }
 
         // ============================================
