@@ -290,7 +290,7 @@
         import * as THREE from 'three';
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        import { SplatMesh, SplatLoader } from '@sparkjsdev/spark';
+        import { SplatMesh, SplatLoader, SparkRenderer } from '@sparkjsdev/spark';
 
         const deg = Math.PI / 180;
 
@@ -317,12 +317,23 @@
                   else ChefQuality.save('normal');
               });
 
+        /* Spark installs a default SparkRenderer on first render if the scene has
+           none, so we add our own first to control how the splats are drawn.
+           Every property here is copied into the shader uniforms each frame,
+           which is why applyQualityTierLive can retune it mid-session. */
+        function installSparkRenderer() {
+            sparkRenderer = new SparkRenderer({ renderer, ...Q.splat });
+            scene.add(sparkRenderer);
+            console.log('[quality] spark renderer installed', Q.splat);
+        }
+
         function applyQualityTierLive(tier) {
             qualityTier = tier;
             Q = ChefQuality.settings(tier);
             ChefQuality.save(tier);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
             renderer.shadowMap.enabled = false;
+            if (sparkRenderer) Object.assign(sparkRenderer, Q.splat);
             fillLightObjects.forEach(l => scene.remove(l));
             scene.traverse(o => {
                 if (o.isMesh && o.material) {
@@ -333,7 +344,7 @@
             console.log('[quality] downgraded to ' + tier);
         }
 
-        let scene, camera, renderer, controls;
+        let scene, camera, renderer, controls, sparkRenderer;
         let clock = new THREE.Clock();
         let splatMesh;
         let josephMixer = null;
@@ -373,6 +384,9 @@
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.2;
             document.getElementById('scene-container').appendChild(renderer.domElement);
+
+            // Must come before any SplatMesh reaches the scene
+            installSparkRenderer();
 
             setupLighting();
             setupControls();

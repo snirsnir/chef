@@ -27,12 +27,46 @@
        popups, health meter, button labels) are drawn by the browser at full
        resolution and stay crisp no matter how low this goes. What blurs is the
        3D world itself and any text baked into a model texture, such as the menu
-       sign. 0.4 is roughly the floor where that sign is still legible. */
+       sign. 0.4 is roughly the floor where that sign is still legible.
+
+       Each tier also carries a `splat` block, passed straight to Spark's
+       SparkRenderer. These matter far more than maxPixelRatio, because they cut
+       the work per splat instead of blurring the whole frame:
+
+         maxStdDev       how many standard deviations of each Gaussian get drawn.
+                         The shader sizes the quad as maxStdDev * sqrt(eigen), so
+                         halving it quarters the fill rate. Spark's default is
+                         sqrt(8) ~ 2.83. Too low and splats get visibly clipped
+                         into hard-edged discs.
+         minAlpha        splats fainter than this are dropped in the *vertex*
+                         shader, before rasterising a single pixel. Spark's
+                         default of 0.5/255 keeps almost everything.
+         minPixelRadius  drop splats smaller than this on screen. Sub-pixel
+                         splats only alias, so culling them is nearly free
+                         visually and removes a lot of distant geometry.
+         maxPixelRadius  clamp on huge close-up splats, capping worst-case
+                         overdraw when the camera is right against a wall. */
     var PRESETS = {
-        normal:   { maxPixelRatio: 0.6,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 60 },
-        low:      { maxPixelRatio: 0.5,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 40 },
-        ultra:    { maxPixelRatio: 0.4,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 30 },
-        extreme:  { maxPixelRatio: 0.3,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true, maxFps: 20 }
+        normal: {
+            maxPixelRatio: 0.6, antialias: false, shadows: false, fillLights: false,
+            splatsEnabled: true, maxFps: 60,
+            splat: { maxStdDev: 2.4, minAlpha: 0.010, minPixelRadius: 0.5, maxPixelRadius: 256 }
+        },
+        low: {
+            maxPixelRatio: 0.5, antialias: false, shadows: false, fillLights: false,
+            splatsEnabled: true, maxFps: 40,
+            splat: { maxStdDev: 2.0, minAlpha: 0.020, minPixelRadius: 1.0, maxPixelRadius: 192 }
+        },
+        ultra: {
+            maxPixelRatio: 0.4, antialias: false, shadows: false, fillLights: false,
+            splatsEnabled: true, maxFps: 30,
+            splat: { maxStdDev: 1.7, minAlpha: 0.040, minPixelRadius: 1.5, maxPixelRadius: 128 }
+        },
+        extreme: {
+            maxPixelRatio: 0.3, antialias: false, shadows: false, fillLights: false,
+            splatsEnabled: true, maxFps: 20,
+            splat: { maxStdDev: 1.4, minAlpha: 0.060, minPixelRadius: 2.0, maxPixelRadius: 96 }
+        }
     };
 
     // Downgrade thresholds: if fps < 20 go to ultra, if < 40 go to low

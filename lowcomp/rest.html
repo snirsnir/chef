@@ -1410,7 +1410,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         import * as THREE from 'three';
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        import { SplatMesh, SplatLoader } from '@sparkjsdev/spark';
+        import { SplatMesh, SplatLoader, SparkRenderer } from '@sparkjsdev/spark';
 
         // ============================================
         // GAME CONFIGURATION
@@ -1449,12 +1449,23 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                   else ChefQuality.save('normal');
               });
 
+        /* Spark installs a default SparkRenderer on first render if the scene has
+           none, so we add our own first to control how the splats are drawn.
+           Every property here is copied into the shader uniforms each frame,
+           which is why applyQualityTierLive can retune it mid-session. */
+        function installSparkRenderer() {
+            sparkRenderer = new SparkRenderer({ renderer, ...Q.splat });
+            scene.add(sparkRenderer);
+            console.log('[quality] spark renderer installed', Q.splat);
+        }
+
         function applyQualityTierLive(tier) {
             qualityTier = tier;
             Q = ChefQuality.settings(tier);
             ChefQuality.save(tier);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.maxPixelRatio));
             renderer.shadowMap.enabled = false;
+            if (sparkRenderer) Object.assign(sparkRenderer, Q.splat);
             fillLightObjects.forEach(l => scene.remove(l));
             // Turning the shadow map off changes the shaders every lit material
             // needs, so they have to be rebuilt.
@@ -1472,7 +1483,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         // ============================================
         // GLOBAL VARIABLES
         // ============================================
-        let scene, camera, renderer;
+        let scene, camera, renderer, sparkRenderer;
         let controls;
         let clock = new THREE.Clock();
         let splatMesh;
@@ -1617,6 +1628,9 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             renderer.toneMappingExposure = 1.2;
             renderer.domElement.tabIndex = -1;
             document.getElementById('scene-container').appendChild(renderer.domElement);
+
+            // Must come before any SplatMesh reaches the scene
+            installSparkRenderer();
 
             // Setup lighting
             setupLighting();
