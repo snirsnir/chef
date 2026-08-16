@@ -321,6 +321,22 @@
             border-radius: 16px;
             object-fit: contain;
         }
+        #start-video-overlay button {
+            position: absolute;
+            bottom: 30px;
+            font-family: 'Varela Round', Arial, sans-serif;
+            font-size: 18px;
+            padding: 14px 50px;
+            background: linear-gradient(135deg, #b84000 0%, #e06010 40%, #b84000 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.15s;
+            z-index: 1101;
+        }
+        #start-video-overlay button:hover { transform: scale(1.08); }
+        #start-video-overlay button:active { transform: scale(0.95); }
 
         /* Mobile Controls */
         #mobile-controls {
@@ -384,6 +400,7 @@
     <!-- Start video overlay -->
     <div id="start-video-overlay">
         <video id="start-video" src="video/start.mp4" playsinline></video>
+        <button id="start-video-btn">התחל ▶</button>
     </div>
 
     <!-- Loading Screen -->
@@ -1391,9 +1408,11 @@
             // Don't override onended callback — it's already set to loadSceneModels()
             startVid.onerror = showStartScreen;
 
-            document.addEventListener('keydown', (e) => {
-                if (e.key === '0') { startVid.pause(); startVid.dispatchEvent(new Event('ended')); }
-            }, { once: true });
+            const startBtn = document.getElementById('start-video-btn');
+            startBtn.addEventListener('click', () => {
+                startVid.pause();
+                startVid.dispatchEvent(new Event('ended'));
+            });
 
 
             // If mobile, auto-start without pointer lock

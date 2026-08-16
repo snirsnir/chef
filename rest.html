@@ -1573,27 +1573,8 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
 
         // Characters
         let characters = [];
+        // Only chef Joseph loads (minimalist restaurant)
         const characterModels = [
-            {
-                file: 'models/maria.glb',
-                scale: 0.8,  // Slightly bigger
-                speed: 0,  // Static character (not moving)
-                rotation: { x: 0, y: -70, z: 0 },
-                path: {
-                    start: { x: -1.5235, y: 0.1, z: -0.4217 },
-                    end: { x: -1.5235, y: 0.1, z: -0.4217 }  // Same as start = stays in place
-                }
-            },
-            {
-                file: 'models/benny2.glb',
-                scale: 0.7,
-                speed: 0,  // Static character (not moving)
-                rotation: { x: 0, y: -90, z: 0 },
-                path: {
-                    start: { x: 2.45, y: 0.2, z: -0.85 },
-                    end: { x: 2.45, y: 0.2, z: -0.85 }  // Same as start = stays in place
-                }
-            },
             {
                 file: 'models/joseph.glb',
                 scale: 1,
@@ -1603,70 +1584,6 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
                 path: {
                     start: { x: 0.11, y: 0.1, z: -5.56 },
                     end: { x: 0.11, y: 0.1, z: -5.56 }  // Same as start = stays in place
-                }
-            },
-            {
-                file: 'models/waiter.glb',
-                scale: 0.75,
-                speed: 0.15,
-                rotation: { x: 0, y: 0, z: 0 },
-                waypoints: [
-                    { x: 3.4647, y: 0.3, z: -4.1987 },
-                    { x: -0.03,  y: 0.3, z: -4.03 },
-                    { x: 0.06,   y: 0.3, z:  3.69 },
-                    { x: -0.03,  y: 0.3, z: -4.03 },
-                    { x: 3.4647, y: 0.3, z: -4.1987 }
-                ]
-            },
-            {
-                file: 'models/mansit.glb',
-                scale: 0.8,
-                speed: 0,  // Static character (not moving)
-                rotation: { x: 0, y: 0, z: 0 },
-                path: {
-                    start: { x: 1.43, y: 0.25, z: -3.64 },
-                    end: { x: 1.43, y: 0.25, z: -3.64 }  // Same as start = stays in place
-                }
-            },
-
-            {
-                file: 'models/womenSit.glb',
-                scale: 0.8,
-                speed: 0,  // Static character (not moving)
-                rotation: { x: 0, y: 0, z: 0 },
-                path: {
-                    start: { x: -0.99, y: 0.1, z: -0.51 },
-                    end: { x: -0.99, y: 0.1, z: -0.51 }  // Same as start = stays in place
-                }
-            },
-            {
-                file: 'models/manSit2.glb',
-                scale: 0.8,
-                speed: 0,  // Static character (not moving)
-                rotation: { x: 0, y: 180, z: 0 },
-                path: {
-                    start: { x: -0.94, y: 0.1, z: 0.47 },
-                    end: { x: -0.94, y: 0.1, z: 0.47 }  // Same as start = stays in place
-                }
-            },
-            {
-                file: 'models/pino.glb',
-                scale: 0.8,
-                speed: 0,  // Static character (not moving)
-                rotation: { x: 0, y: 180, z: 0 },
-                path: {
-                    start: { x: 0.28, y: 0.1, z: 5.68 },
-                    end: { x: 0.28, y: 0.1, z: 5.68 }  // Same as start = stays in place
-                }
-            },
-            {
-                file: 'models/aloneMan.glb',
-                scale: 0.8,
-                speed: 0,  // Static character (not moving)
-                rotation: { x: 0, y: 0, z: 0 },
-                path: {
-                    start: { x: -1.45, y: 0.1, z: -1.90 },
-                    end: { x: -1.45, y: 0.1, z: -1.90 }  // Same as start = stays in place
                 }
             }
         ];
