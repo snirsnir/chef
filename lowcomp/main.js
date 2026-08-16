@@ -22,6 +22,9 @@ function createWindow() {
   win.setFullScreen(true);
   win.loadFile('index.html');
 
+  // Open DevTools for debugging
+  win.webContents.openDevTools();
+
   win.on('enter-full-screen', () => win.webContents.send('win-state', true));
   win.on('leave-full-screen',  () => win.webContents.send('win-state', false));
 }
