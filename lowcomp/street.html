@@ -1428,7 +1428,9 @@
 
             startBtn.addEventListener('click', () => {
                 startVid.pause();
-                startVid.dispatchEvent(new Event('ended'));
+                // Hide video overlay and show start screen
+                startOverlay.style.display = 'none';
+                document.getElementById('start-screen').style.display = 'flex';
             });
 
 
