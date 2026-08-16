@@ -22,8 +22,14 @@ function createWindow() {
   win.setFullScreen(true);
   win.loadFile('index.html');
 
-  // Open DevTools for debugging
-  win.webContents.openDevTools();
+  // DevTools stays closed on launch. The window is frameless so there is no
+  // menu bar to reach it from — bind F12 directly instead.
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.key === 'F12') {
+      win.webContents.toggleDevTools();
+      event.preventDefault();
+    }
+  });
 
   win.on('enter-full-screen', () => win.webContents.send('win-state', true));
   win.on('leave-full-screen',  () => win.webContents.send('win-state', false));
