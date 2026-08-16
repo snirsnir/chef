@@ -921,10 +921,12 @@
             }
 
             // Delay model loading until video plays and ends
+            console.log('[video] setting onended handler...');
             startVid.onended = () => {
                 console.log('[video] ended, now loading scene models');
                 loadSceneModels();
             };
+            console.log('[video] onended handler set, duration:', startVid.duration);
 
             // Start the video (this triggers onModelLoaded which shows the video overlay)
             onModelLoaded();
@@ -1398,13 +1400,14 @@
             if (gameState.isLoaded) return; // Prevent double call
 
             gameState.isLoaded = true;
+            console.log('[onModelLoaded] starting...');
 
             document.getElementById('loading-screen').style.display = 'none';
 
             // Start video and transition to start screen when it ends
             const startOverlay = document.getElementById('start-video-overlay');
             const startVid     = document.getElementById('start-video');
-            console.log('[video] showing overlay, starting video...');
+            console.log('[video] showing overlay, video element:', startVid);
             startOverlay.style.display = 'flex';
             startVid.play().catch(() => console.error('[video] play failed'));
 
