@@ -60,30 +60,45 @@ await reader.parseSplats(
 );
 
 const meanScale = new Float32Array(n);
+const aniso = new Float32Array(n);
 for (let i = 0; i < n; i++) {
-    meanScale[i] = (scales[i * 3] + scales[i * 3 + 1] + scales[i * 3 + 2]) / 3;
+    const x = scales[i * 3], y = scales[i * 3 + 1], z = scales[i * 3 + 2];
+    meanScale[i] = (x + y + z) / 3;
+    aniso[i] = Math.max(x, y, z) / Math.max(1e-9, Math.min(x, y, z));
 }
 
-// Reference size for the compactness penalty: the 90th percentile, so only the
-// genuinely oversized minority is pushed down. Sampled rather than fully
-// sorted — at these counts an exact percentile buys nothing.
-const sizeRef = (() => {
+// Reference values for the penalties: the 90th percentile of each, so only the
+// genuinely extreme minority is pushed down. Sampled rather than fully sorted —
+// at these counts an exact percentile buys nothing.
+function percentile90(values) {
     const step = Math.max(1, Math.floor(n / 200000));
     const s = [];
-    for (let i = 0; i < n; i += step) s.push(meanScale[i]);
+    for (let i = 0; i < n; i += step) s.push(values[i]);
     s.sort((a, b) => a - b);
     return s[Math.floor(0.9 * (s.length - 1))] || 1e-6;
-})();
+}
+const sizeRef = percentile90(meanScale);
+const anisoRef = percentile90(aniso);
 
-// A square penalty left oversized splats at nine times their share of the
-// source file, because a voxel holding nothing else still elects one. Raising
-// it to the fourth power costs those giants every voxel that has any ordinary
-// splat in it, while still letting one represent a voxel it alone occupies.
+/* Prefer splats that are opaque, compact, and round.
+
+   Size uses a fourth power: a square left oversized splats at nine times their
+   share of the source file, because a voxel holding nothing else still elects
+   one. The fourth power costs them every voxel containing an ordinary splat
+   while still letting one represent a voxel it alone occupies.
+
+   Shape needs its own term, because size alone cannot see it. A needle scaled
+   (0.5, 0.01, 0.01) averages to 0.17 and sails through the size penalty, yet it
+   draws as a long thin streak. Ranking on size alone pushed splats with an axis
+   ratio over 10 from 4% of the source to 10.9% of the output, and the size
+   compensation then stretched the survivors further — which is what the dark
+   slashes across the shopfronts were. */
 const score = new Float32Array(n);
 for (let i = 0; i < n; i++) {
     const rel = meanScale[i] / sizeRef;
     const rel2 = rel * rel;
-    score[i] = alphas[i] / (1 + rel2 * rel2);
+    const shape = aniso[i] / anisoRef;
+    score[i] = alphas[i] / ((1 + rel2 * rel2) * (1 + shape * shape));
 }
 
 let minX = Infinity, minY = Infinity, minZ = Infinity;
@@ -182,15 +197,27 @@ for (const i of keep) {
     const key = voxelKey(i, COMP_CELLS, compCell);
     const before = areaBefore.get(key) ?? 0;
     const after = areaAfter.get(key) ?? 0;
+    // Taper the ceiling by roundness. Growing a needle only makes a longer
+    // streak, so an elongated splat is allowed far less of the correction than
+    // a round one covering the same area.
+    const shape = aniso[i] / anisoRef;
+    const ceiling = 1 + (COMP_MAX - 1) / (1 + shape * shape);
     let f = after > 0 ? Math.sqrt(before / after) : 1;
     if (f < 1) f = 1;
-    if (f > COMP_MAX) { f = COMP_MAX; clamped++; }
+    if (f > ceiling) { f = ceiling; clamped++; }
     grow[i] = f;
     growSum += f;
     if (f > growMax) growMax = f;
 }
 console.log(`size compensation: mean ${(growSum / keep.length).toFixed(2)}x, max ${growMax.toFixed(2)}x, ` +
-            `${(100 * clamped / keep.length).toFixed(1)}% hit the ${COMP_MAX}x clamp`);
+            `${(100 * clamped / keep.length).toFixed(1)}% hit their roundness-tapered ceiling`);
+
+// Needles draw as streaks, so the output should not concentrate them.
+let needlesSrc = 0, needlesKept = 0;
+for (let i = 0; i < n; i++) if (aniso[i] > 10) needlesSrc++;
+for (const i of keep) if (aniso[i] > 10) needlesKept++;
+console.log(`axis ratio > 10: ${(100 * needlesSrc / n).toFixed(1)}% of source, ` +
+            `${(100 * needlesKept / keep.length).toFixed(1)}% of output`);
 
 let areaSrc = 0, areaKept = 0;
 for (let i = 0; i < n; i++) areaSrc += meanScale[i] * meanScale[i];
