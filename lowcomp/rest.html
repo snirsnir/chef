@@ -3147,7 +3147,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             if (doughMesh3D)    { scene.remove(doughMesh3D);    doughMesh3D = null; }
             if (rollingPinMesh) { scene.remove(rollingPinMesh); rollingPinMesh = null; }
 
-            // Load food.glb to the left of the pizza (optional in lowcomp)
+            // Load food.glb to the left of the pizza
             const pizzaPos = new THREE.Vector3(
                 bowlWorldPos.x + 0.55,
                 bowlWorldPos.y,
@@ -5557,13 +5557,6 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         // RESTAURANT SCENE LOADING (SPZ)
         // ============================================
         async function loadRestaurantScene() {
-            if (!Q.splatsEnabled) {
-                console.log('[quality] skipping restaurant SPZ (splats disabled)');
-                gameState.splatReady = true;
-                onModelLoaded();
-                return;
-            }
-
             console.log('Loading restaurant SPZ model...');
 
             try {

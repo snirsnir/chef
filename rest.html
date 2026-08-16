@@ -5557,13 +5557,6 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
         // RESTAURANT SCENE LOADING (SPZ)
         // ============================================
         async function loadRestaurantScene() {
-            if (!Q.splatsEnabled) {
-                console.log('[quality] skipping restaurant SPZ (splats disabled)');
-                gameState.splatReady = true;
-                onModelLoaded();
-                return;
-            }
-
             console.log('Loading restaurant SPZ model...');
 
             try {

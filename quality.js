@@ -26,7 +26,7 @@
     var PRESETS = {
         normal: { maxPixelRatio: 2, antialias: true,  shadows: true,  fillLights: true,  splatsEnabled: true,  maxFps: 0  },
         low:    { maxPixelRatio: 1, antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 30 },
-        ultra:  { maxPixelRatio: 0.5, antialias: false, shadows: false, fillLights: false, splatsEnabled: false, maxFps: 24 }
+        ultra:  { maxPixelRatio: 0.5, antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 24 }
     };
 
     // Downgrade thresholds: if fps < 20 go to ultra, if < 40 go to low
