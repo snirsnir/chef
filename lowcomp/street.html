@@ -930,7 +930,18 @@
         // ============================================
         // SCENE MODEL LOADING (globally accessible for button clicks)
         // ============================================
+        // The video can finish two ways — it plays to the end, or the viewer
+        // presses the start button. Both hand off to here, so guard against
+        // loading the whole scene twice.
+        let sceneModelsRequested = false;
+
         function loadSceneModels() {
+            if (sceneModelsRequested) {
+                console.log('[loadSceneModels] already loading, ignoring');
+                return;
+            }
+            sceneModelsRequested = true;
+
             console.log('[loadSceneModels] starting, CONFIG.USE_SPZ:', CONFIG.USE_SPZ);
             // Load the scene
             if (CONFIG.USE_SPZ) {
