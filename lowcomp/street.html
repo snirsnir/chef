@@ -865,27 +865,40 @@
             // Setup event listeners
             setupEventListeners();
 
-            // Load the scene
-            if (CONFIG.USE_SPZ) {
-                loadSPZModel();
-            } else {
-                loadGLBModel();
+            // Start animation loop (before models load, so render loop is ready)
+            animate();
+
+            // Play start video, then load the scene models
+            // This delays model loading until video ends, reducing peak memory/CPU
+            const startOverlay = document.getElementById('start-video-overlay');
+            const startVid     = document.getElementById('start-video');
+
+            function loadSceneModels() {
+                console.log('[loading] video ended, now loading scene models');
+                // Load the scene
+                if (CONFIG.USE_SPZ) {
+                    loadSPZModel();
+                } else {
+                    loadGLBModel();
+                }
+
+                // Load walking person
+                loadWalkingPerson();
+
+                // Load all wandering characters
+                loadWanderingCharacters();
+
+                // Load PNG image
+                loadImagePlane();
+
+                // Load menu sign
+                loadMenuGlb();
             }
 
-            // Load walking person
-            loadWalkingPerson();
-
-            // Load all wandering characters
-            loadWanderingCharacters();
-
-            // Load PNG image
-            loadImagePlane();
-
-            // Load menu sign
-            loadMenuGlb();
-
-            // Start animation loop
-            animate();
+            // Delay model loading until video plays and ends
+            startVid.onended = () => {
+                loadSceneModels();
+            };
 
             // Show debug if enabled
             if (CONFIG.DEBUG_MODE) {
@@ -1360,11 +1373,12 @@
 
             document.getElementById('loading-screen').style.display = 'none';
 
-            // Play start video, then show start screen
+            // Start video and transition to start screen when it ends
             const startOverlay = document.getElementById('start-video-overlay');
             const startVid     = document.getElementById('start-video');
             startOverlay.style.display = 'flex';
             startVid.play().catch(() => {});
+
             function showStartScreen() {
                 startOverlay.style.display = 'none';
                 document.getElementById('start-screen').style.display = 'flex';

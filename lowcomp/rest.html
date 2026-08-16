@@ -1716,22 +1716,25 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             // Setup event listeners
             setupEventListeners();
 
-            // Load the restaurant scene
-            loadRestaurantScene();
-
-            // Add brick wall (with kitchen door)
+            // Add brick wall (with kitchen door) — lightweight, do now
             createBrickWall();
             // Additional brick walls
             addBrickWall(1.7586, -3.8880, 3.3281, -3.7957);
 
-            // Load characters
-            loadCharacters();
-
-            // Load pizzas
-            loadPizzas();
-
-            // Start animation loop
+            // Start animation loop (before heavy model loading)
             animate();
+
+            // Delay heavy model loading until after onModelLoaded callback
+            // This reduces peak load when initializing
+            setTimeout(() => {
+                console.log('[loading] delaying heavy models...');
+                // Load the restaurant scene (SPZ — most expensive)
+                loadRestaurantScene();
+                // Load characters
+                loadCharacters();
+                // Load pizzas
+                loadPizzas();
+            }, 100);
 
             // Show debug if enabled
             if (CONFIG.DEBUG_MODE) {
