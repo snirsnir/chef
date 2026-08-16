@@ -125,8 +125,6 @@
         #start-btn:hover  { transform: scale(1.07); }
         #start-btn:active { transform: scale(0.96); }
 
-
-        /* ── Graphics quality toggle (mirrors the updater button, other side) ── */
         #quality-btn, #quality-hint { display: none; }
     </style>
 </head>
@@ -209,18 +207,19 @@
         btn.addEventListener('click', goNext);
 
         // ── Graphics quality toggle ──
-        // Cycles אוטומטית → קיצוני → חלשה → רגילה. "אוטומטית" lets the first scene
+        // Cycles אוטומטית → קיצוני → ultra → חלשה → רגילה. "אוטומטית" lets the first scene
         // measure its own frame rate and pin a tier; the others force it.
         (() => {
             const btn  = document.getElementById('quality-btn');
             const hint = document.getElementById('quality-hint');
             const LABELS = {
-                auto:   { text: '⚙ גרפיקה: אוטומטית', hint: 'המשחק ימדוד את המחשב ויתאים את עצמו' },
-                ultra:  { text: '🔥 גרפיקה: קיצוני',   hint: 'רזולוציה נמוכה מאוד, אין סplats — למחשבים ישנים' },
-                low:    { text: '🐢 גרפיקה: חלשה',    hint: 'פחות פיקסלים, בלי צללים — למחשבים חלשים' },
-                normal: { text: '⚡ גרפיקה: רגילה',   hint: 'איכות מלאה — למחשבים חזקים' }
+                auto:    { text: '⚙ גרפיקה: אוטומטית', hint: 'המשחק ימדוד את המחשב ויתאים את עצמו' },
+                extreme: { text: '💀 גרפיקה: קיצוני',  hint: '1/16 רזולוציה, אין splats, 15fps — למחשבים תשנות' },
+                ultra:   { text: '🔥 גרפיקה: ultra',     hint: '1/4 רזולוציה, splats, 24fps — לישנים מאוד' },
+                low:     { text: '🐢 גרפיקה: חלשה',    hint: 'חצי רזולוציה, בלי צללים — למחשבים חלשים' },
+                normal:  { text: '⚡ גרפיקה: רגילה',   hint: 'איכות מלאה — למחשבים חזקים' }
             };
-            const NEXT = { auto: 'ultra', ultra: 'low', low: 'normal', normal: 'auto' };
+            const NEXT = { auto: 'extreme', extreme: 'ultra', ultra: 'low', low: 'normal', normal: 'auto' };
 
             function current() { return ChefQuality.read() || 'auto'; }
 

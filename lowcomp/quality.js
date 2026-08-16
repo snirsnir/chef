@@ -21,9 +21,10 @@
     var KEY = 'chef-quality';
 
     var PRESETS = {
-        normal: { maxPixelRatio: 2, antialias: true,  shadows: true,  fillLights: true,  splatsEnabled: true,  maxFps: 0  },
-        low:    { maxPixelRatio: 1, antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 30 },
-        ultra:  { maxPixelRatio: 0.5, antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 24 }
+        normal:   { maxPixelRatio: 2,    antialias: true,  shadows: true,  fillLights: true,  splatsEnabled: true,  maxFps: 0  },
+        low:      { maxPixelRatio: 1,    antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 30 },
+        ultra:    { maxPixelRatio: 0.5,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 24 },
+        extreme:  { maxPixelRatio: 0.25, antialias: false, shadows: false, fillLights: false, splatsEnabled: false, maxFps: 15 }
     };
 
     // Downgrade thresholds (not used in lowcomp, but kept for consistency)
@@ -35,7 +36,7 @@
     function read() {
         try {
             var v = window.localStorage.getItem(KEY);
-            if (v === 'low' || v === 'normal' || v === 'ultra') return v;
+            if (v === 'low' || v === 'normal' || v === 'ultra' || v === 'extreme') return v;
         } catch (e) { /* storage blocked — fall back to measuring each run */ }
         return null;
     }
@@ -76,12 +77,12 @@
         };
     }
 
-    // ── LOWCOMP: Hard-coded ultra, no options ──
+    // ── LOWCOMP: Hard-coded extreme, no options ──
     window.ChefQuality = {
         KEY: KEY,
         FPS_ULTRA_THRESHOLD: FPS_ULTRA_THRESHOLD,
         FPS_DOWNGRADE_THRESHOLD: FPS_DOWNGRADE_THRESHOLD,
-        read: function() { return 'ultra'; },            // Always ultra
+        read: function() { return 'extreme'; },          // Always extreme
         save: function() { return true; },               // No-op
         settings: settings,
         createFpsWatchdog: function() {                  // No measurement

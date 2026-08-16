@@ -24,9 +24,10 @@
     var KEY = 'chef-quality';
 
     var PRESETS = {
-        normal: { maxPixelRatio: 2, antialias: true,  shadows: true,  fillLights: true,  splatsEnabled: true,  maxFps: 0  },
-        low:    { maxPixelRatio: 1, antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 30 },
-        ultra:  { maxPixelRatio: 0.5, antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 24 }
+        normal:   { maxPixelRatio: 2,    antialias: true,  shadows: true,  fillLights: true,  splatsEnabled: true,  maxFps: 0  },
+        low:      { maxPixelRatio: 1,    antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 30 },
+        ultra:    { maxPixelRatio: 0.5,  antialias: false, shadows: false, fillLights: false, splatsEnabled: true,  maxFps: 24 },
+        extreme:  { maxPixelRatio: 0.25, antialias: false, shadows: false, fillLights: false, splatsEnabled: false, maxFps: 15 }
     };
 
     // Downgrade thresholds: if fps < 20 go to ultra, if < 40 go to low
@@ -38,7 +39,7 @@
     function read() {
         try {
             var v = window.localStorage.getItem(KEY);
-            if (v === 'low' || v === 'normal' || v === 'ultra') return v;
+            if (v === 'low' || v === 'normal' || v === 'ultra' || v === 'extreme') return v;
         } catch (e) { /* storage blocked — fall back to measuring each run */ }
         return null;
     }
