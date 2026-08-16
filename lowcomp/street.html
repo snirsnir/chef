@@ -1251,13 +1251,6 @@
         // MODEL LOADING - SPZ (Gaussian Splatting)
         // ============================================
         async function loadSPZModel() {
-            if (!Q.splatsEnabled) {
-                console.log('[quality] skipping street SPZ (splats disabled), loading GLB fallback');
-                gameState.splatReady = true;
-                loadGLBModel();
-                return;
-            }
-
             console.log('Loading SPZ model with Spark...');
 
             try {
