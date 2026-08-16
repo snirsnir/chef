@@ -897,6 +897,7 @@
             // This delays model loading until video ends, reducing peak memory/CPU
             const startOverlay = document.getElementById('start-video-overlay');
             const startVid     = document.getElementById('start-video');
+            console.log('[init] startOverlay:', startOverlay, 'startVid:', startVid);
 
             function loadSceneModels() {
                 console.log('[loading] video ended, now loading scene models');
