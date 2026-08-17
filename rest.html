@@ -3558,6 +3558,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
 
         function startToppingPhase() {
             toppingPhaseActive = true;
+            controls.lock();
             if (pizzaCycleCount > 0) showHealthPanel();
             document.getElementById('ingredient-hint').textContent = 'קודם כל יש להוסיף רוטב עגבניות!';
             document.getElementById('ingredient-hint').style.display = 'block';
