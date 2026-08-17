@@ -3836,6 +3836,7 @@ O = הגדל  |  I = הקטן  |  U = הרחב  |  Y = צמצם</div>
             pizzaBiteActive = true;
             pizzaBiteRisen  = false;
             pizzaBiteAnim   = null;
+            controls.lock();
             document.addEventListener('mousemove', onPizzaBiteMouseMove);
             document.addEventListener('mousedown', onPizzaBiteClick);
         }
